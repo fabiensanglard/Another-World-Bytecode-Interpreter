@@ -21,7 +21,7 @@
 #include "video.h"
 
 
-const Logic::OpcodeStub Logic::_opTable[] = {
+const Logic::OpcodeStub Logic::opcodeTable[] = {
 	/* 0x00 */
 	&Logic::op_movConst,
 	&Logic::op_mov,
@@ -58,7 +58,7 @@ const Logic::OpcodeStub Logic::_opTable[] = {
 	&Logic::op_playMusic
 };
 
-const uint16 Logic::_freqTable[] = {
+const uint16 Logic::frequenceTable[] = {
 	0x0CFF, 0x0DC3, 0x0E91, 0x0F6F, 0x1056, 0x114E, 0x1259, 0x136C, 
 	0x149F, 0x15D9, 0x1726, 0x1888, 0x19FD, 0x1B86, 0x1D21, 0x1EDE, 
 	0x20AB, 0x229C, 0x24B3, 0x26D7, 0x293F, 0x2BB2, 0x2E4C, 0x3110, 

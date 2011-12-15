@@ -69,4 +69,10 @@ int main(int argc, char *argv[]) {
 /*
    Great fan site here: https://sites.google.com/site/interlinkknight/anotherworld
    Contains the wheelcode :P ! 
+
+   A lot of details can be found regarding the game and engine architecture at:
+   http://www.anotherworld.fr/anotherworld_uk/another_world.htm
+
+   The chronology of the game implementation can retraced via the ordering of the opcodes:
+   The sound and music opcode are at the end: Music and sound was done at the end
 */

@@ -54,8 +54,10 @@ struct Logic {
 		VAR_PAUSE_SLICES         = 0xFF
 	};
 	
-	static const OpcodeStub _opTable[];
-	static const uint16 _freqTable[];
+	static const OpcodeStub opcodeTable[];
+
+	//This table is used to play a sound
+	static const uint16 frequenceTable[];
 
 	Mixer *_mix;
 	Resource *_res;

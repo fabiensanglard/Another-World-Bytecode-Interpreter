@@ -39,14 +39,14 @@ struct MixerChannel {
 struct Serializer;
 struct SystemStub;
 
+#define AUDIO_NUM_CHANNELS 4
+
 struct Mixer {
-	enum {
-		NUM_CHANNELS = 4
-	};
+
 
 	void *_mutex;
 	SystemStub *_stub;
-	MixerChannel _channels[NUM_CHANNELS];
+	MixerChannel _channels[AUDIO_NUM_CHANNELS];
 
 	Mixer(SystemStub *stub);
 	void init();
