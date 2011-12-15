@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{B3CCA718-9E21-4DC3-BDF6-BFEF7E06DFC8}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>raw</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>C:\research\zlib125\zlib-1.2.5;C:\research\SDL-devel-1.2.14-VC8\SDL-1.2.14\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\research\SDL-devel-1.2.14-VC8\SDL-1.2.14\lib;C:\research\zlib125\zlib-1.2.5\old\visualc6\Win32_DLL_Debug;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>C:\research\SDL-devel-1.2.14-VC8\SDL-1.2.14\include;C:\research\zlib125\zlib-1.2.5;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\research\SDL-devel-1.2.14-VC8\SDL-1.2.14\lib;C:\research\zlib125\zlib-1.2.5\old\visualc6\Win32_DLL_Release;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>sdl.lib;sdlMain.lib;zlib1d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>C:\research\another-world\Another World\raw.exe</OutputFile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <OutputFile>C:\research\another-world\Another World\rawRelease.exe</OutputFile>
+      <AdditionalDependencies>sdl.lib;sdlmain.lib;zlib1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\bank.h" />
+    <ClInclude Include="..\engine.h" />
+    <ClInclude Include="..\file.h" />
+    <ClInclude Include="..\intern.h" />
+    <ClInclude Include="..\logic.h" />
+    <ClInclude Include="..\mixer.h" />
+    <ClInclude Include="..\resource.h" />
+    <ClInclude Include="..\serializer.h" />
+    <ClInclude Include="..\sfxplayer.h" />
+    <ClInclude Include="..\sys.h" />
+    <ClInclude Include="..\systemstub.h" />
+    <ClInclude Include="..\util.h" />
+    <ClInclude Include="..\video.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\bank.cpp" />
+    <ClCompile Include="..\engine.cpp" />
+    <ClCompile Include="..\file.cpp" />
+    <ClCompile Include="..\logic.cpp" />
+    <ClCompile Include="..\main.cpp" />
+    <ClCompile Include="..\mixer.cpp" />
+    <ClCompile Include="..\resource.cpp" />
+    <ClCompile Include="..\sdlstub.cpp" />
+    <ClCompile Include="..\serializer.cpp" />
+    <ClCompile Include="..\sfxplayer.cpp" />
+    <ClCompile Include="..\staticres.cpp" />
+    <ClCompile Include="..\util.cpp" />
+    <ClCompile Include="..\video.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
