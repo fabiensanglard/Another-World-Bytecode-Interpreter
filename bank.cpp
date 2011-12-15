@@ -32,6 +32,9 @@ bool Bank::read(const MemEntry *me, uint8 *buf) {
 	File f;
 	if (f.open(bankName, _dataDir)) {
 		f.seek(me->bankPos);
+
+		// Depending if the resource is packed or not we
+		// can read directly or unpack it.
 		if (me->packedSize == me->unpackedSize) {
 			f.read(buf, me->packedSize);
 			ret = true;

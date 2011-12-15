@@ -67,6 +67,8 @@ int main(int argc, char *argv[]) {
 
 
 /*
+   Game was originally made with 16. SIXTEEN colors. Running on 320x200 (64,000 pixels.)
+
    Great fan site here: https://sites.google.com/site/interlinkknight/anotherworld
    Contains the wheelcode :P ! 
 
@@ -74,5 +76,27 @@ int main(int argc, char *argv[]) {
    http://www.anotherworld.fr/anotherworld_uk/another_world.htm
 
    The chronology of the game implementation can retraced via the ordering of the opcodes:
-   The sound and music opcode are at the end: Music and sound was done at the end
+   The sound and music opcode are at the end: Music and sound was done at the end.
+
+   Virtual Machine:
+   ================
+
+	   Seems the threading model is collaborative multi-tasking (as opposed to preemptive multitasking):
+	   A thread (called a Channel on Eric Chahi website) will release the hand to the next one via the
+	   break opcode.
+
+	   
+
+   Video :
+   =======
+	   Double buffer architecture. AW optcodes even has a special instruction for blitting from one
+	   frame buffer to an other.
+
+
+
+   Sound :
+   =======
+	   Mixing is done on software.
+
+
 */

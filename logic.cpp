@@ -353,7 +353,9 @@ void Logic::setupScripts() {
 		restartAt(_res->_newPtrsId);
 		_res->_newPtrsId = 0;
 	}
-	for (int i = 0; i < 0x40; ++i) {
+
+	
+	for (int i = 0; i < VM_NUM_CHANNELS; ++i) {
 		vmChannelPaused[0][i] = vmChannelPaused[1][i];
 		uint16 n = _scriptSlotsPos[1][i];
 		if (n != 0xFFFF) {
@@ -364,16 +366,33 @@ void Logic::setupScripts() {
 }
 
 void Logic::runScripts() {
-	for (int i = 0; i < 0x40; ++i) {
+
+	// Run the Virtual Machine for every active channels.
+	// Inactive channels are marked with a channel instruction pointer.
+	// A channel must feature a break so the interpreter can move to the 
+	// next channel.
+	// An inactive channels is marked via a "slot position" set to 0xFFFF (VM_INACTIVE_CHANNEL)
+	for (int i = 0; i < VM_NUM_CHANNELS; ++i) {
+
 		if (vmChannelPaused[0][i] == 0) {
 			uint16 n = _scriptSlotsPos[0][i];
-			if (n != 0xFFFF) {
+
+			if (n != VM_INACTIVE_CHANNEL) {
+
+				// Set the script pointer to the right location.
+				// script pc is used in executeScript in order
+				// to get the next opcode.
 				_scriptPtr.pc = _res->_segCode + n;
 				_stackPtr = 0;
+
 				_scriptHalted = false;
 				debug(DBG_LOGIC, "Logic::runScripts() i=0x%02X n=0x%02X *p=0x%02X", i, n, *_scriptPtr.pc);
 				executeScript();
+
+				//Since .pc is going to be modified by this next loop iteration, we need to save it.
 				_scriptSlotsPos[0][i] = _scriptPtr.pc - _res->_segCode;
+
+
 				debug(DBG_LOGIC, "Logic::runScripts() i=0x%02X pos=0x%X", i, _scriptSlotsPos[0][i]);
 				if (_stub->_pi.quit) {
 					break;
@@ -383,10 +402,16 @@ void Logic::runScripts() {
 	}
 }
 
+#define COLOR_BLACK 0xFF
+#define DEFAULT_ZOOM 0x40
+
 void Logic::executeScript() {
 	while (!_scriptHalted) {
 		uint8 opcode = _scriptPtr.fetchByte();
-		if (opcode & 0x80) {
+
+		// 1000 0000 is set
+		if (opcode & 0x80) 
+		{
 			uint16 off = ((opcode << 8) | _scriptPtr.fetchByte()) * 2;
 			_res->_useSegVideo2 = false;
 			int16 x = _scriptPtr.fetchByte();
@@ -398,40 +423,58 @@ void Logic::executeScript() {
 			}
 			debug(DBG_VIDEO, "vid_opcd_0x80 : opcode=0x%X off=0x%X x=%d y=%d", opcode, off, x, y);
 			_vid->setDataBuffer(_res->_segVideo1, off);
-			_vid->drawShape(0xFF, 0x40, Point(x,y));
-		} else if (opcode & 0x40) {
+			_vid->drawShape(COLOR_BLACK, DEFAULT_ZOOM, Point(x,y));
+		} 
+		// 0100 0000 is set
+		else if (opcode & 0x40) 
+		{
 			int16 x, y;
 			uint16 off = _scriptPtr.fetchWord() * 2;
 			x = _scriptPtr.fetchByte();
 			_res->_useSegVideo2 = false;
-			if (!(opcode & 0x20)) {
-				if (!(opcode & 0x10)) {
+			if (!(opcode & 0x20)) 
+			{
+				if (!(opcode & 0x10)) 
+				{
 					x = (x << 8) | _scriptPtr.fetchByte();
 				} else {
 					x = _scriptVars[x];
 				}
-			} else {
+			} 
+			else 
+			{
 				if (opcode & 0x10) {
 					x += 0x100;
 				}
 			}
+
 			y = _scriptPtr.fetchByte();
-			if (!(opcode & 8)) {
+
+			if (!(opcode & 8)) 
+			{
 				if (!(opcode & 4)) {
 					y = (y << 8) | _scriptPtr.fetchByte();
 				} else {
 					y = _scriptVars[y];
 				}
 			}
+
 			uint16 zoom = _scriptPtr.fetchByte();
-			if (!(opcode & 2)) {
-				if (!(opcode & 1)) {
+
+			if (!(opcode & 2)) 
+			{
+				if (!(opcode & 1)) 
+				{
 					--_scriptPtr.pc;
 					zoom = 0x40;
-				} else {
+				} 
+				else 
+				{
 					zoom = _scriptVars[zoom];
 				}
-			} else {
+			} 
+			else 
+			{
 				if (opcode & 1) {
 					_res->_useSegVideo2 = true;
 					--_scriptPtr.pc;
@@ -441,11 +484,16 @@ void Logic::executeScript() {
 			debug(DBG_VIDEO, "vid_opcd_0x40 : off=0x%X x=%d y=%d", off, x, y);
 			_vid->setDataBuffer(_res->_useSegVideo2 ? _res->_segVideo2 : _res->_segVideo1, off);
 			_vid->drawShape(0xFF, zoom, Point(x, y));
-		} else {
-			if (opcode > 0x1A) {
+		} 
+		else 
+		{
+			if (opcode > 0x1A) 
+			{
 				error("Logic::executeScript() ec=0x%X invalid opcode=0x%X", 0xFFF, opcode);
-			} else {
-				(this->*_opTable[opcode])();
+			} 
+			else 
+			{
+				(this->*opcodeTable[opcode])();
 			}
 		}
 	}
@@ -535,7 +583,7 @@ void Logic::snd_playSound(uint16 resNum, uint8 freq, uint8 vol, uint8 channel) {
 				mc.loopPos = mc.len;
 			}
 			assert(freq < 40);
-			_mix->playChannel(channel & 3, &mc, _freqTable[freq], MIN(vol, 0x3F));
+			_mix->playChannel(channel & 3, &mc, frequenceTable[freq], MIN(vol, 0x3F));
 		}
 	}
 }

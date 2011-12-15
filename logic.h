@@ -66,11 +66,27 @@ struct Logic {
 	SystemStub *_stub;
 
 
+
+
 	int16 _scriptVar_0xBF;
 	int16 _scriptVars[VM_NUM_VARIABLES];
 	uint16 _scriptStackCalls[VM_NUM_CHANNELS];
+
+     #define VM_INACTIVE_CHANNEL 0xFFFF
 	uint16 _scriptSlotsPos[2][VM_NUM_CHANNELS];
+	// This array is used: 
+	//     0 to save the instruction pointer when a channel 
+	//       return the exectuting hand.
+	//     1 No idea yet :/ !
+
+
 	uint8 vmChannelPaused[2][VM_NUM_CHANNELS];
+
+
+
+
+
+
 
 	Ptr _scriptPtr;
 	uint8 _stackPtr;

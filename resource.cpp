@@ -48,9 +48,12 @@ void Resource::readBank(const MemEntry *me, uint8 *dstBuf) {
 
 void Resource::readEntries() {	
 	File f;
+
 	if (!f.open("memlist.bin", _dataDir)) {
 		error("Resource::readEntries() unable to open 'memlist.bin' file\n");
+		//Error will exit() no need to return or do anything else.
 	}
+
 	_numMemList = 0;
 	MemEntry *me = _memList;
 	while (1) {
@@ -89,6 +92,7 @@ void Resource::load() {
 			}
 			++it;
 		}
+
 		if (me == 0) {
 			break; // no entry found
 		}
@@ -104,6 +108,8 @@ void Resource::load() {
 				continue;
 			}
 		}
+
+
 		if (me->bankNum == 0) {
 			warning("Resource::load() ec=0x%X (me->bankNum == 0)", 0xF00);
 			me->valid = 0;
@@ -158,10 +164,12 @@ void Resource::update(uint16 num) {
 
 void Resource::setupPtrs(uint16 ptrId) {
 	if (ptrId != _curPtrsId) {
+
 		uint8 ipal = 0;
 		uint8 icod = 0;
 		uint8 ivd1 = 0;
 		uint8 ivd2 = 0;
+
 		if (ptrId >= 0x3E80 && ptrId <= 0x3E89) {
 			uint16 part = ptrId - 0x3E80;
 			ipal = _memListParts[part][0];
@@ -171,10 +179,13 @@ void Resource::setupPtrs(uint16 ptrId) {
 		} else {
 			error("Resource::setupPtrs() ec=0x%X invalid ptrId", 0xF07);
 		}
+
 		invalidateAll();
+
 		_memList[ipal].valid = 2;
 		_memList[icod].valid = 2;
 		_memList[ivd1].valid = 2;
+
 		if (ivd2 != 0) {
 			_memList[ivd2].valid = 2;
 		}
