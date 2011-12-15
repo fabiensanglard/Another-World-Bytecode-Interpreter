@@ -23,6 +23,9 @@
 
 #include "intern.h"
 
+#define VM_NUM_CHANNELS 64
+#define VM_NUM_VARIABLES 256
+
 struct Mixer;
 struct Resource;
 struct Serializer;
@@ -60,11 +63,13 @@ struct Logic {
 	Video *_vid;
 	SystemStub *_stub;
 
+
 	int16 _scriptVar_0xBF;
-	int16 _scriptVars[0x100];
-	uint16 _scriptStackCalls[0x40];
-	uint16 _scriptSlotsPos[2][0x40];
-	uint8 _scriptPaused[2][0x40];
+	int16 _scriptVars[VM_NUM_VARIABLES];
+	uint16 _scriptStackCalls[VM_NUM_CHANNELS];
+	uint16 _scriptSlotsPos[2][VM_NUM_CHANNELS];
+	uint8 vmChannelPaused[2][VM_NUM_CHANNELS];
+
 	Ptr _scriptPtr;
 	uint8 _stackPtr;
 	bool _scriptHalted;

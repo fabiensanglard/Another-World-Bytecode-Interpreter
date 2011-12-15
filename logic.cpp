@@ -209,7 +209,7 @@ void Logic::op_resetScript() {
 			*p++ = 0xFFFE;
 		}
 	} else if (a < 2) {
-		uint8 *p = &_scriptPaused[1][j];
+		uint8 *p = &vmChannelPaused[1][j];
 		while (n--) {
 			*p++ = a;
 		}
@@ -344,7 +344,7 @@ void Logic::restartAt(uint16 ptrId) {
 	_scriptVars[0xE4] = 0x14;
 	_res->setupPtrs(ptrId);
 	memset((uint8 *)_scriptSlotsPos, 0xFF, sizeof(_scriptSlotsPos));
-	memset((uint8 *)_scriptPaused, 0, sizeof(_scriptPaused));
+	memset((uint8 *)vmChannelPaused, 0, sizeof(vmChannelPaused));
 	_scriptSlotsPos[0][0] = 0;	
 }
 
@@ -354,7 +354,7 @@ void Logic::setupScripts() {
 		_res->_newPtrsId = 0;
 	}
 	for (int i = 0; i < 0x40; ++i) {
-		_scriptPaused[0][i] = _scriptPaused[1][i];
+		vmChannelPaused[0][i] = vmChannelPaused[1][i];
 		uint16 n = _scriptSlotsPos[1][i];
 		if (n != 0xFFFF) {
 			_scriptSlotsPos[0][i] = (n == 0xFFFE) ? 0xFFFF : n;
@@ -365,7 +365,7 @@ void Logic::setupScripts() {
 
 void Logic::runScripts() {
 	for (int i = 0; i < 0x40; ++i) {
-		if (_scriptPaused[0][i] == 0) {
+		if (vmChannelPaused[0][i] == 0) {
 			uint16 n = _scriptSlotsPos[0][i];
 			if (n != 0xFFFF) {
 				_scriptPtr.pc = _res->_segCode + n;
@@ -557,7 +557,7 @@ void Logic::saveOrLoad(Serializer &ser) {
 		SE_ARRAY(_scriptVars, 0x100, Serializer::SES_INT16, VER(1)),
 		SE_ARRAY(_scriptStackCalls, 0x100, Serializer::SES_INT16, VER(1)),
 		SE_ARRAY(_scriptSlotsPos, 0x40 * 2, Serializer::SES_INT16, VER(1)),
-		SE_ARRAY(_scriptPaused, 0x40 * 2, Serializer::SES_INT8, VER(1)),
+		SE_ARRAY(vmChannelPaused, 0x40 * 2, Serializer::SES_INT8, VER(1)),
 		SE_END()
 	};
 	ser.saveOrLoadEntries(entries);
