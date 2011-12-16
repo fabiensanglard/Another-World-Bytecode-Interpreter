@@ -121,6 +121,7 @@ void SDLStub::setPalette(uint8 s, uint8 n, const uint8 *buf) {
 }
 
 void SDLStub::copyRect(uint16 x, uint16 y, uint16 w, uint16 h, const uint8 *buf, uint32 pitch) {
+
 	buf += y * pitch + x;
 	uint16 *p = (uint16 *)_offscreen;
 	while (h--) {
@@ -133,6 +134,7 @@ void SDLStub::copyRect(uint16 x, uint16 y, uint16 w, uint16 h, const uint8 *buf,
 		p += SCREEN_W;
 		buf += pitch;
 	}
+
 	SDL_LockSurface(_sclscreen);
 	(this->*_scalers[_scaler].proc)((uint16 *)_sclscreen->pixels, _sclscreen->pitch, (uint16 *)_offscreen, SCREEN_W, SCREEN_W, SCREEN_H);
 	SDL_UnlockSurface(_sclscreen);

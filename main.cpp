@@ -54,8 +54,9 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	//FCS
-	//g_debugMask = DBG_INFO; // DBG_LOGIC | DBG_BANK | DBG_VIDEO | DBG_SER | DBG_SND
-	g_debugMask = 0 ;//DBG_INFO |  DBG_LOGIC | DBG_BANK | DBG_VIDEO | DBG_SER | DBG_SND ;
+	//g_debugMask = DBG_INFO; // DBG_VM | DBG_BANK | DBG_VIDEO | DBG_SER | DBG_SND
+	//g_debugMask = DBG_VM ;
+	//g_debugMask = 0 ;//DBG_INFO |  DBG_VM | DBG_BANK | DBG_VIDEO | DBG_SER | DBG_SND ;
 	SystemStub *stub = SystemStub_SDL_create();
 	Engine *e = new Engine(stub, dataPath, savePath);
 	e->run();
@@ -115,7 +116,8 @@ int main(int argc, char *argv[]) {
 	   It seems that even when a setvec is requested by a thread, we cannot set the instruction pointer
 	   yet. The thread is allowed to keep on executing its code for the remaining of the vm frame.
 
-
+       A virtual machine frame has a variable duration. The unit of time is 20ms and the frame can be set
+	   to live for 1 (20ms ; 50Hz) up to 5 (100ms ; 10Hz).
 
 
    Video :
@@ -123,13 +125,24 @@ int main(int argc, char *argv[]) {
 	   Double buffer architecture. AW optcodes even has a special instruction for blitting from one
 	   frame buffer to an other.
 
+	   Double buffering is implemented in software
 
+	   According to Eric Chahi's webpage there are 4 framebuffer. Since on full screenbuffer is 320x200/2 = 32kB
+	   that would mean the total size consumed is 128KB ?
 
    Sound :
    =======
 	   Mixing is done on software.
 
+	   Since the virtal machine and SDL are running simultaneously in two different threads:
+	   Any read or write to an elements of the sound channels MUST be synchronized with a 
+	   mutex.
 
+   FastMode :
+   ==========
+
+   The game engine features a "fast-mode"...what it to be able to respond to the now defunct
+   TURBO button commonly found on 386/486 era PC ?!
 
 
    Endianess:
@@ -154,7 +167,8 @@ int main(int argc, char *argv[]) {
 
    Q: How does the interpreter deals with the CPU speed ?! A pentium is a tad faster than a Motorola 68000
       after all.
-   A: ? No idea ?
+   A: See vm frame time: The vm frame duration is variable. The vm actually write for how long a video frame
+      should be displayed in variable 0xFF. The value is the number of 20ms slice
 
 
 

@@ -23,35 +23,42 @@
 
 
 Engine::Engine(SystemStub *stub, const char *dataDir, const char *saveDir)
-	: _stub(stub), vm(&mixer, &_res, &_ply, &_vid, _stub), mixer(_stub), _res(&_vid, dataDir), 
-	_ply(&mixer, &_res, _stub), _vid(&_res, stub), _dataDir(dataDir), _saveDir(saveDir), _stateSlot(0) {
+	: _stub(stub), vm(&mixer, &_res, &player, &video, _stub), mixer(_stub), _res(&video, dataDir), 
+	player(&mixer, &_res, _stub), video(&_res, stub), _dataDir(dataDir), _saveDir(saveDir), _stateSlot(0) {
 }
 
 void Engine::run() {
 	_stub->init("Out Of This World");
 	setup();
+
 	vm.restartAt(0x3E80); // demo starts at 0x3E81
+
+
 	while (!_stub->_pi.quit) {
+
 		vm.setupScripts();
+
 		vm.inp_updatePlayer();
+
 		processInput();
-		vm.runScripts();
+
+		vm.hostFrame();
 	}
 	finish();
 	_stub->destroy();
 }
 
 void Engine::setup() {
-	_vid.init();
+	video.init();
 	_res.allocMemBlock();
 	_res.readEntries();
 	vm.init();
 	mixer.init();
-	_ply.init();
+	player.init();
 }
 
 void Engine::finish() {
-	_ply.free();
+	player.free();
 	mixer.free();
 	_res.freeMemBlock();
 }
@@ -101,8 +108,8 @@ void Engine::saveGameState(uint8 slot, const char *desc) {
 		Serializer s(&f, Serializer::SM_SAVE, _res._memPtrStart);
 		vm.saveOrLoad(s);
 		_res.saveOrLoad(s);
-		_vid.saveOrLoad(s);
-		_ply.saveOrLoad(s);
+		video.saveOrLoad(s);
+		player.saveOrLoad(s);
 		mixer.saveOrLoad(s);
 		if (f.ioErr()) {
 			warning("I/O error when saving game state");
@@ -124,7 +131,7 @@ void Engine::loadGameState(uint8 slot) {
 			warning("Bad savegame format");
 		} else {
 			// mute
-			_ply.stop();
+			player.stop();
 			mixer.stopAll();
 			// header
 			uint16 ver = f.readUint16BE();
@@ -135,8 +142,8 @@ void Engine::loadGameState(uint8 slot) {
 			Serializer s(&f, Serializer::SM_LOAD, _res._memPtrStart, ver);
 			vm.saveOrLoad(s);
 			_res.saveOrLoad(s);
-			_vid.saveOrLoad(s);
-			_ply.saveOrLoad(s);
+			video.saveOrLoad(s);
+			player.saveOrLoad(s);
 			mixer.saveOrLoad(s);
 		}
 		if (f.ioErr()) {

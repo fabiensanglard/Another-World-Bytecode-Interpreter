@@ -50,6 +50,7 @@ struct Serializer;
 struct Video;
 
 struct Resource {
+
 	enum ResType {
 		RT_SOUND  = 0,
 		RT_MUSIC  = 1,
@@ -66,12 +67,12 @@ struct Resource {
 	};
 	
 	enum {
-		MEM_BLOCK_SIZE = 600 * 1024
+		MEM_BLOCK_SIZE = 600 * 1024   //600kb total memory consumed (not taking into account stack and heap
 	};
 	
 	static const uint16 _memListParts[][4];
 	
-	Video *_vid;
+	Video *video;
 	const char *_dataDir;
 	MemEntry _memList[150];
 	uint16 _numMemList;

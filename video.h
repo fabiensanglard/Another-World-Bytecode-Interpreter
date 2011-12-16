@@ -45,6 +45,9 @@ struct SystemStub;
 // This is used to detect the end of  _stringsTableEng and _stringsTableDemo
 #define END_OF_STRING_DICTIONARY 0xFFFF 
 
+// Special value when no palette change is necessary
+#define NO_PALETTE_CHANGE_REQUESTED 0xFF 
+
 struct Video {
 	typedef void (Video::*drawLine)(int16 x1, int16 x2, uint8 col);
 
@@ -58,13 +61,20 @@ struct Video {
 
 	Resource *_res;
 	SystemStub *_stub;
+	
 
-	uint8 _newPal, _curPal;
+
+	uint8 paletteIdRequested, currentPaletteId;
 	uint8 *_pagePtrs[4];
+
 	uint8 *_curPagePtr1, *_curPagePtr2, *_curPagePtr3;
+
 	Polygon _pg;
 	int16 _hliney;
+
+	//Precomputer division lookup table
 	uint16 _interpTable[0x400];
+
 	Ptr _pData;
 	uint8 *_dataBuf;
 

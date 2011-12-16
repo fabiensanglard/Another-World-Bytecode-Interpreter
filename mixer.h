@@ -46,6 +46,10 @@ struct Mixer {
 
 	void *_mutex;
 	SystemStub *_stub;
+
+	// Since the virtal machine and SDL are running simultaneously in two different threads
+	// any read or write to an elements of the sound channels MUST be synchronized with a 
+	// mutex.
 	MixerChannel _channels[AUDIO_NUM_CHANNELS];
 
 	Mixer(SystemStub *stub);

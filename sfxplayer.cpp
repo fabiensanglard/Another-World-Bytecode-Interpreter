@@ -43,10 +43,14 @@ void SfxPlayer::setEventsDelay(uint16 delay) {
 }
 
 void SfxPlayer::loadSfxModule(uint16 resNum, uint16 delay, uint8 pos) {
+
 	debug(DBG_SND, "SfxPlayer::loadSfxModule(0x%X, %d, %d)", resNum, delay, pos);
 	MutexStack(_stub, _mutex);
+
+
 	MemEntry *me = &_res->_memList[resNum];
-	if (me->valid == 1 && me->type == 1) {
+
+	if (me->valid == 1 && me->type == Resource::ResType::RT_MUSIC) {
 		_resNum = resNum;
 		memset(&_sfxMod, 0, sizeof(SfxModule));
 		_sfxMod.curOrder = pos;
@@ -70,7 +74,9 @@ void SfxPlayer::loadSfxModule(uint16 resNum, uint16 delay, uint8 pos) {
 }
 
 void SfxPlayer::prepareInstruments(const uint8 *p) {
+
 	memset(_sfxMod.samples, 0, sizeof(_sfxMod.samples));
+
 	for (int i = 0; i < 15; ++i) {
 		SfxInstrument *ins = &_sfxMod.samples[i];
 		uint16 resNum = READ_BE_UINT16(p); p += 2;

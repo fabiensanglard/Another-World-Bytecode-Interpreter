@@ -22,7 +22,7 @@
 #include "intern.h"
 
 enum {
-	DBG_LOGIC = 1 << 0,
+	DBG_VM = 1 << 0,
 	DBG_BANK  = 1 << 1,
 	DBG_VIDEO = 1 << 2,
 	DBG_SND   = 1 << 3,

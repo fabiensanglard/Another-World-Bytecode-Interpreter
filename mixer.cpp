@@ -51,6 +51,8 @@ void Mixer::free() {
 void Mixer::playChannel(uint8 channel, const MixerChunk *mc, uint16 freq, uint8 volume) {
 	debug(DBG_SND, "Mixer::playChannel(%d, %d, %d)", channel, freq, volume);
 	assert(channel < AUDIO_NUM_CHANNELS);
+
+	// The mutex is acquired in the constructor
 	MutexStack(_stub, _mutex);
 	MixerChannel *ch = &_channels[channel];
 	ch->active = true;
@@ -58,6 +60,8 @@ void Mixer::playChannel(uint8 channel, const MixerChunk *mc, uint16 freq, uint8 
 	ch->chunk = *mc;
 	ch->chunkPos = 0;
 	ch->chunkInc = (freq << 8) / _stub->getOutputSampleRate();
+
+	//At the end of the scope the MutexStack destructor is called and the mutex is released. 
 }
 
 void Mixer::stopChannel(uint8 channel) {
@@ -82,42 +86,57 @@ void Mixer::stopAll() {
 	}
 }
 
+// This is SDL callback. Called in order to populate the buf with len bytes.  
+// The mixer iterates through all active channels and combine all sounds.
+
+// Since there is no way to know when SDL will ask for a buffer fill, we need
+// to synchronize with a mutex so the channels remain stable during the execution
+// of this method.
 void Mixer::mix(int8 *buf, int len) {
+
 	MutexStack(_stub, _mutex);
+
+	//Clear the buffer since nothing garanty we are receiving clean memory.
 	memset(buf, 0, len);
+
 	for (uint8 i = 0; i < AUDIO_NUM_CHANNELS; ++i) {
 		MixerChannel *ch = &_channels[i];
-		if (ch->active) {
-			int8 *pBuf = buf;
-			for (int j = 0; j < len; ++j, ++pBuf) {
-				uint16 p1, p2;
-				uint16 ilc = (ch->chunkPos & 0xFF);
-				p1 = ch->chunkPos >> 8;
-				ch->chunkPos += ch->chunkInc;
-				if (ch->chunk.loopLen != 0) {
-					if (p1 == ch->chunk.loopPos + ch->chunk.loopLen - 1) {
-						debug(DBG_SND, "Looping sample on channel %d", i);
-						ch->chunkPos = p2 = ch->chunk.loopPos;
-					} else {
-						p2 = p1 + 1;
-					}
+		if (!ch->active) 
+			continue;
+
+		int8 *pBuf = buf;
+		for (int j = 0; j < len; ++j, ++pBuf) {
+
+			uint16 p1, p2;
+			uint16 ilc = (ch->chunkPos & 0xFF);
+			p1 = ch->chunkPos >> 8;
+			ch->chunkPos += ch->chunkInc;
+
+			if (ch->chunk.loopLen != 0) {
+				if (p1 == ch->chunk.loopPos + ch->chunk.loopLen - 1) {
+					debug(DBG_SND, "Looping sample on channel %d", i);
+					ch->chunkPos = p2 = ch->chunk.loopPos;
 				} else {
-					if (p1 == ch->chunk.len - 1) {
-						debug(DBG_SND, "Stopping sample on channel %d", i);
-						ch->active = false;
-						break;
-					} else {
-						p2 = p1 + 1;
-					}
+					p2 = p1 + 1;
 				}
-				// interpolate
-				int8 b1 = *(int8 *)(ch->chunk.data + p1);
-				int8 b2 = *(int8 *)(ch->chunk.data + p2);
-				int8 b = (int8)((b1 * (0xFF - ilc) + b2 * ilc) >> 8);
-				// set volume and clamp
-				*pBuf = addclamp(*pBuf, (int)b * ch->volume / 0x40);
+			} else {
+				if (p1 == ch->chunk.len - 1) {
+					debug(DBG_SND, "Stopping sample on channel %d", i);
+					ch->active = false;
+					break;
+				} else {
+					p2 = p1 + 1;
+				}
 			}
+			// interpolate
+			int8 b1 = *(int8 *)(ch->chunk.data + p1);
+			int8 b2 = *(int8 *)(ch->chunk.data + p2);
+			int8 b = (int8)((b1 * (0xFF - ilc) + b2 * ilc) >> 8);
+
+			// set volume and clamp
+			*pBuf = addclamp(*pBuf, (int)b * ch->volume / 0x40);  //0x40=64
 		}
+		
 	}
 }
 

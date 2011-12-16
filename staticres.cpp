@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include "logic.h"
+#include "vm.h"
 #include "resource.h"
 #include "video.h"
 
@@ -43,7 +43,7 @@ const VirtualMachine::OpcodeStub VirtualMachine::opcodeTable[] = {
 	&VirtualMachine::op_fillPage,
 	&VirtualMachine::op_copyPage,
 	/* 0x10 */
-	&VirtualMachine::op_updateDisplay,
+	&VirtualMachine::op_blitFramebuffer,
 	&VirtualMachine::op_halt,
 	&VirtualMachine::op_drawString,
 	&VirtualMachine::op_sub,

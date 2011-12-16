@@ -39,14 +39,19 @@ Video::Video(Resource *res, SystemStub *stub)
 }
 
 void Video::init() {
-	_newPal = 0xFF;
+
+	paletteIdRequested = NO_PALETTE_CHANGE_REQUESTED;
+
 	for (int i = 0; i < 4; ++i) {
 		_pagePtrs[i] = allocPage();
 	}
 	_curPagePtr3 = getPagePtr(1);
 	_curPagePtr2 = getPagePtr(2);
+
 	changePagePtr1(0xFE);
+
 	_interpTable[0] = 0x4000;
+
 	for (int i = 1; i < 0x400; ++i) {
 		_interpTable[i] = 0x4000 / i;
 	}
@@ -58,15 +63,18 @@ void Video::setDataBuffer(uint8 *dataBuf, uint16 offset) {
 }
 
 void Video::drawShape(uint8 color, uint16 zoom, const Point &pt) {
+
 	uint8 i = _pData.fetchByte();
+
 	if (i >= 0xC0) {
-		if (color & 0x80) {
-			color = i & 0x3F;
+
+		if (color & 0x80) {   //0x80 = 128
+			color = i & 0x3F; //0x3F =  63
 		}
 		_pg.init(_pData.pc, zoom);
 		fillPolygon(color, zoom, pt);
 	} else {
-		i &= 0x3F;
+		i &= 0x3F;  //0x3F = 63
 		if (i == 1) {
 			warning("Video::drawShape() ec=0x%X (i != 2)", 0xF80);
 		} else if (i == 2) {
@@ -103,13 +111,13 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
 	++i;
 	--j;
 
-	drawLine pdl;
+	drawLine drawFct;
 	if (color < 0x10) {
-		pdl = &Video::drawLineN;
+		drawFct = &Video::drawLineN;
 	} else if (color > 0x10) {
-		pdl = &Video::drawLineP;
+		drawFct = &Video::drawLineP;
 	} else {
-		pdl = &Video::drawLineT;
+		drawFct = &Video::drawLineT;
 	}
 
 	uint32 cpt1 = x1 << 16;
@@ -141,7 +149,7 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
 					if (x1 <= 319 && x2 >= 0) {
 						if (x1 < 0) x1 = 0;
 						if (x2 > 319) x2 = 319;
-						(this->*pdl)(x1, x2, color);
+						(this->*drawFct)(x1, x2, color);
 					}
 				}
 				cpt1 += step1;
@@ -187,21 +195,31 @@ void Video::drawString(uint8 color, uint16 x, uint16 y, uint16 stringId) {
 
 	const StrEntry *se = _stringsTableEng;
 
+	//Search for the location where the string is located.
 	while (se->id != END_OF_STRING_DICTIONARY && se->id != stringId) 
 		++se;
-
+	
 	debug(DBG_VIDEO, "drawString(%d, %d, %d, '%s')", color, x, y, se->str);
 
-	uint16 xx = x;
+	//Not found
+	if (se->id == END_OF_STRING_DICTIONARY)
+		return;
+	
+
+    //Used if the string contains a return carriage.
+	uint16 xOrigin = x;
 	int len = strlen(se->str);
 	for (int i = 0; i < len; ++i) {
+
 		if (se->str[i] == '\n') {
 			y += 8;
-			x = xx;
-		} else {
-			drawChar(se->str[i], x, y, color, _curPagePtr1);
-			++x;
-		}
+			x = xOrigin;
+			continue;
+		} 
+		
+		drawChar(se->str[i], x, y, color, _curPagePtr1);
+		x++;
+		
 	}
 
 }
@@ -388,25 +406,36 @@ void Video::changePagePtr1(uint8 page) {
 	_curPagePtr1 = getPagePtr(page);
 }
 
-void Video::fillPage(uint8 page, uint8 color) {
-	debug(DBG_VIDEO, "Video::fillPage(%d, %d)", page, color);
-	uint8 *p = getPagePtr(page);
+void Video::fillPage(uint8 pageId, uint8 color) {
+	debug(DBG_VIDEO, "Video::fillPage(%d, %d)", pageId, color);
+	uint8 *p = getPagePtr(pageId);
+
+	// Since a palette indice is coded on 4 bits, we need to duplicate the
+	// clearing color to the upper part of the byte.
 	uint8 c = (color << 4) | color;
+
+
 	memset(p, c, VID_PAGE_SIZE);
 }
 
-void Video::copyPage(uint8 src, uint8 dst, int16 vscroll) {
-	debug(DBG_VIDEO, "Video::copyPage(%d, %d)", src, dst);
-	if (src >= 0xFE || !((src &= 0xBF) & 0x80)) {
-		uint8 *p = getPagePtr(src);
-		uint8 *q = getPagePtr(dst);
-		if (p != q) {
-			memcpy(q, p, VID_PAGE_SIZE);
-		}		
+// This is the opcode to blitz backbuffer to front buffer.
+// This opcode should be followed by a screen refresh
+void Video::copyPage(uint8 srcPageId, uint8 dstPageId, int16 vscroll) {
+
+	debug(DBG_VIDEO, "Video::copyPage(%d, %d)", srcPageId, dstPageId);
+
+	if (srcPageId == dstPageId)
+		return;
+
+	if (srcPageId >= 0xFE || !((srcPageId &= 0xBF) & 0x80)) {
+		uint8 *p = getPagePtr(srcPageId);
+		uint8 *q = getPagePtr(dstPageId);
+		memcpy(q, p, VID_PAGE_SIZE);
+			
 	} else {
-		uint8 *p = getPagePtr(src & 3);
-		uint8 *q = getPagePtr(dst);
-		if (p != q && vscroll >= -199 && vscroll <= 199) {
+		uint8 *p = getPagePtr(srcPageId & 3);
+		uint8 *q = getPagePtr(dstPageId);
+		if (vscroll >= -199 && vscroll <= 199) {
 			uint16 h = 200;
 			if (vscroll < 0) {
 				h += vscroll;
@@ -454,35 +483,44 @@ uint8 *Video::allocPage() {
 }
 
 void Video::changePal(uint8 palNum) {
-	if (palNum < 32) {
-		uint8 *p = _res->_segVideoPal + palNum * 32;
-		uint8 pal[16 * 3];
-		for (int i = 0; i < 16; ++i) {
-			uint8 c1 = *(p + 0);
-			uint8 c2 = *(p + 1);
-			p += 2;
-			pal[i * 3 + 0] = ((c1 & 0x0F) << 2) | ((c1 & 0x0F) >> 2); // r
-			pal[i * 3 + 1] = ((c2 & 0xF0) >> 2) | ((c2 & 0xF0) >> 6); // g
-			pal[i * 3 + 2] = ((c2 & 0x0F) >> 2) | ((c2 & 0x0F) << 2); // b
-		}
-		_stub->setPalette(0, 16, pal);
-		_curPal = palNum;
+
+	if (palNum >= 32)
+		return;
+	
+
+	uint8 *p = _res->_segVideoPal + palNum * 32;
+	uint8 pal[16 * 3];
+	for (int i = 0; i < 16; ++i) {
+		uint8 c1 = *(p + 0);
+		uint8 c2 = *(p + 1);
+		p += 2;
+		pal[i * 3 + 0] = ((c1 & 0x0F) << 2) | ((c1 & 0x0F) >> 2); // r
+		pal[i * 3 + 1] = ((c2 & 0xF0) >> 2) | ((c2 & 0xF0) >> 6); // g
+		pal[i * 3 + 2] = ((c2 & 0x0F) >> 2) | ((c2 & 0x0F) << 2); // b
 	}
+
+	_stub->setPalette(0, 16, pal);
+	currentPaletteId = palNum;
+	
+
 }
 
-void Video::updateDisplay(uint8 page) {
-	debug(DBG_VIDEO, "Video::updateDisplay(%d)", page);
-	if (page != 0xFE) {
-		if (page == 0xFF) {
+void Video::updateDisplay(uint8 pageId) {
+	debug(DBG_VIDEO, "Video::updateDisplay(%d)", pageId);
+	if (pageId != 0xFE) {
+		if (pageId == 0xFF) {
 			SWAP(_curPagePtr2, _curPagePtr3);
 		} else {
-			_curPagePtr2 = getPagePtr(page);
+			_curPagePtr2 = getPagePtr(pageId);
 		}
 	}
-	if (_newPal != 0xFF) {
-		changePal(_newPal);
-		_newPal = 0xFF;
+
+	//Check if we need to change the palette
+	if (paletteIdRequested != NO_PALETTE_CHANGE_REQUESTED) {
+		changePal(paletteIdRequested);
+		paletteIdRequested = NO_PALETTE_CHANGE_REQUESTED;
 	}
+
 	_stub->copyRect(0, 0, 320, 200, _curPagePtr2, 160);
 }
 
@@ -499,8 +537,8 @@ void Video::saveOrLoad(Serializer &ser) {
 		}		
 	}
 	Serializer::Entry entries[] = {
-		SE_INT(&_curPal, Serializer::SES_INT8, VER(1)),
-		SE_INT(&_newPal, Serializer::SES_INT8, VER(1)),
+		SE_INT(&currentPaletteId, Serializer::SES_INT8, VER(1)),
+		SE_INT(&paletteIdRequested, Serializer::SES_INT8, VER(1)),
 		SE_INT(&mask, Serializer::SES_INT8, VER(1)),
 		SE_ARRAY(_pagePtrs[0], Video::VID_PAGE_SIZE, Serializer::SES_INT8, VER(1)),
 		SE_ARRAY(_pagePtrs[1], Video::VID_PAGE_SIZE, Serializer::SES_INT8, VER(1)),
@@ -509,10 +547,11 @@ void Video::saveOrLoad(Serializer &ser) {
 		SE_END()
 	};
 	ser.saveOrLoadEntries(entries);
+
 	if (ser._mode == Serializer::SM_LOAD) {
 		_curPagePtr1 = _pagePtrs[(mask >> 4) & 0x3];
 		_curPagePtr2 = _pagePtrs[(mask >> 2) & 0x3];
 		_curPagePtr3 = _pagePtrs[(mask >> 0) & 0x3];
-		changePal(_curPal);
+		changePal(currentPaletteId);
 	}
 }

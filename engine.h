@@ -37,8 +37,8 @@ struct Engine {
 	VirtualMachine vm;
 	Mixer mixer;
 	Resource _res;
-	SfxPlayer _ply;
-	Video _vid;
+	SfxPlayer player;
+	Video video;
 	const char *_dataDir, *_saveDir;
 	uint8 _stateSlot;
 

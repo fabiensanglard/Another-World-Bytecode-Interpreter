@@ -24,7 +24,7 @@
 
 
 Resource::Resource(Video *vid, const char *dataDir) 
-	: _vid(vid), _dataDir(dataDir) {
+	: video(vid), _dataDir(dataDir) {
 }
 
 void Resource::readBank(const MemEntry *me, uint8 *dstBuf) {
@@ -46,8 +46,20 @@ void Resource::readBank(const MemEntry *me, uint8 *dstBuf) {
 #endif
 }
 
+char* resTypeToString[]=
+{
+	"RT_SOUND",
+	"RT_MUSIC",
+	"RT_VIDBUF", 
+	"RT_PAL", 
+	"RT_SCRIPT",
+	"RT_VBMP"
+};
+
 void Resource::readEntries() {	
 	File f;
+	int resourceCounter = 0;
+	int size;
 
 	if (!f.open("memlist.bin", _dataDir)) {
 		error("Resource::readEntries() unable to open 'memlist.bin' file\n");
@@ -69,6 +81,11 @@ void Resource::readEntries() {
 		me->packedSize = f.readUint16BE();
 		me->unk10 = f.readUint16BE();
 		me->unpackedSize = f.readUint16BE();
+
+
+		printf("R:%3d, %s size=%5d (compacted=%d)\n",resourceCounter,resTypeToString[resourceCounter],me->unpackedSize,me->packedSize==me->unpackedSize);
+        resourceCounter++;
+
 		if (me->valid == 0xFF) {
 			break;
 		}
@@ -78,9 +95,10 @@ void Resource::readEntries() {
 }
 
 void Resource::load() {
+
 	while (1) {
 		MemEntry *it = _memList;
-		MemEntry *me = 0;
+		MemEntry *me = NULL;
 
 		// get resource with max rankNum
 		uint8 maxNum = 0;
@@ -93,15 +111,15 @@ void Resource::load() {
 			++it;
 		}
 
-		if (me == 0) {
+		if (me == NULL) {
 			break; // no entry found
 		}
 
-		uint8 *memPtr = 0;
+		uint8 *loadDestination = NULL;
 		if (me->type == 2) {
-			memPtr = _vidCurPtr;
+			loadDestination = _vidCurPtr;
 		} else {
-			memPtr = _scriptCurPtr;
+			loadDestination = _scriptCurPtr;
 			if (me->unpackedSize > _vidBakPtr - _scriptCurPtr) {
 				warning("Resource::load() not enough memory");
 				me->valid = 0;
@@ -114,13 +132,13 @@ void Resource::load() {
 			warning("Resource::load() ec=0x%X (me->bankNum == 0)", 0xF00);
 			me->valid = 0;
 		} else {
-			debug(DBG_BANK, "Resource::load() bufPos=%X size=%X type=%X pos=%X bankNum=%X", memPtr - _memPtrStart, me->packedSize, me->type, me->bankPos, me->bankNum);
-			readBank(me, memPtr);
+			debug(DBG_BANK, "Resource::load() bufPos=%X size=%X type=%X pos=%X bankNum=%X", loadDestination - _memPtrStart, me->packedSize, me->type, me->bankPos, me->bankNum);
+			readBank(me, loadDestination);
 			if(me->type == 2) {
-				_vid->copyPagePtr(_vidCurPtr);
+				video->copyPagePtr(_vidCurPtr);
 				me->valid = 0;
 			} else {
-				me->bufPtr = memPtr;
+				me->bufPtr = loadDestination;
 				me->valid = 1;
 				_scriptCurPtr += me->unpackedSize;
 			}
@@ -238,6 +256,7 @@ void Resource::saveOrLoad(Serializer &ser) {
 			}
 		}
 	}
+
 	Serializer::Entry entries[] = {
 		SE_ARRAY(loadedList, 64, Serializer::SES_INT8, VER(1)),
 		SE_INT(&_curPtrsId, Serializer::SES_INT16, VER(1)),
@@ -252,6 +271,7 @@ void Resource::saveOrLoad(Serializer &ser) {
 		SE_PTR(&_segVideo2, VER(1)),
 		SE_END()
 	};
+
 	ser.saveOrLoadEntries(entries);
 	if (ser._mode == Serializer::SM_LOAD) {
 		uint8 *p = loadedList;

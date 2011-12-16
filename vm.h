@@ -37,7 +37,7 @@ enum ScriptVars {
 
 		VM_VARIABLE_MUS_MARK             = 0xF4,
 
-		VM_VARIABLE_SCROLL_Y             = 0xF9,
+		VM_VARIABLE_SCROLL_Y             = 0xF9, // = 239
 		VM_VARIABLE_HERO_ACTION          = 0xFA,
 		VM_VARIABLE_HERO_POS_JUMP_DOWN   = 0xFB,
 		VM_VARIABLE_HERO_POS_LEFT_RIGHT  = 0xFC,
@@ -64,8 +64,8 @@ struct VirtualMachine {
 
 	Mixer *mixer;
 	Resource *_res;
-	SfxPlayer *_ply;
-	Video *_vid;
+	SfxPlayer *player;
+	Video *video;
 	SystemStub *_stub;
 
 
@@ -115,7 +115,7 @@ struct VirtualMachine {
 	void op_selectPage();
 	void op_fillPage();
 	void op_copyPage();
-	void op_updateDisplay();
+	void op_blitFramebuffer();
 	void op_halt();	
 	void op_drawString();
 	void op_sub();
@@ -130,7 +130,7 @@ struct VirtualMachine {
 	void restartAt(uint16 ptrId);
 	void setupPtrs(uint16 ptrId);
 	void setupScripts();
-	void runScripts();
+	void hostFrame();
 	void executeScript();
 
 	void inp_updatePlayer();
