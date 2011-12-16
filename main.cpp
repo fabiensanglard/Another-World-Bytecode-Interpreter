@@ -78,6 +78,33 @@ int main(int argc, char *argv[]) {
    The chronology of the game implementation can retraced via the ordering of the opcodes:
    The sound and music opcode are at the end: Music and sound was done at the end.
 
+   Call tree:
+   =========
+
+   main
+   {
+       SystemStub *stub = SystemStub_SDL_create();
+       Engine *e = new Engine();
+	   e->run()
+	   {
+	      _stub->init("Out Of This World");
+		  setup();
+	      _log.restartAt(0x3E80); // demo starts at 0x3E81
+
+	     while (!_stub->_pi.quit) 
+		 {
+		   _log.setupScripts();
+		   _log.inp_updatePlayer();
+		    processInput();
+		   _log.runScripts();
+	     }
+
+	     finish();
+	     _stub->destroy();
+	   }
+   }
+
+
    Virtual Machine:
    ================
 
@@ -85,7 +112,11 @@ int main(int argc, char *argv[]) {
 	   A thread (called a Channel on Eric Chahi website) will release the hand to the next one via the
 	   break opcode.
 
-	   
+	   It seems that even when a setvec is requested by a thread, we cannot set the instruction pointer
+	   yet. The thread is allowed to keep on executing its code for the remaining of the vm frame.
+
+
+
 
    Video :
    =======
@@ -97,6 +128,35 @@ int main(int argc, char *argv[]) {
    Sound :
    =======
 	   Mixing is done on software.
+
+
+
+
+   Endianess:
+   ==========
+
+   Atari and Amiga used bigEndian CPUs. Data are hence stored within BANK in big endian format.
+   On an Intel or ARM CPU data will have to be transformed when read.
+
+
+
+   The original codebase contained a looooot of cryptic hexa values.
+   0x100 (for 256 variables)
+   0x400 (for one kilobyte)
+   0x40 (for num threads)
+   0x3F (num thread mask)
+   I cleaned that up.
+
+   Virtual Machine was named "logic" ?!?!
+
+   Questions & Answers :
+   =====================
+
+   Q: How does the interpreter deals with the CPU speed ?! A pentium is a tad faster than a Motorola 68000
+      after all.
+   A: ? No idea ?
+
+
 
 
 */

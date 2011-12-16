@@ -20,7 +20,7 @@
 #define __ENGINE_H__
 
 #include "intern.h"
-#include "logic.h"
+#include "vm.h"
 #include "mixer.h"
 #include "sfxplayer.h"
 #include "resource.h"
@@ -34,8 +34,8 @@ struct Engine {
 	};
 
 	SystemStub *_stub;
-	Logic _log;
-	Mixer _mix;
+	VirtualMachine vm;
+	Mixer mixer;
 	Resource _res;
 	SfxPlayer _ply;
 	Video _vid;

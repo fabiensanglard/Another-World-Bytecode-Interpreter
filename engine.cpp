@@ -23,19 +23,19 @@
 
 
 Engine::Engine(SystemStub *stub, const char *dataDir, const char *saveDir)
-	: _stub(stub), _log(&_mix, &_res, &_ply, &_vid, _stub), _mix(_stub), _res(&_vid, dataDir), 
-	_ply(&_mix, &_res, _stub), _vid(&_res, stub), _dataDir(dataDir), _saveDir(saveDir), _stateSlot(0) {
+	: _stub(stub), vm(&mixer, &_res, &_ply, &_vid, _stub), mixer(_stub), _res(&_vid, dataDir), 
+	_ply(&mixer, &_res, _stub), _vid(&_res, stub), _dataDir(dataDir), _saveDir(saveDir), _stateSlot(0) {
 }
 
 void Engine::run() {
 	_stub->init("Out Of This World");
 	setup();
-	_log.restartAt(0x3E80); // demo starts at 0x3E81
+	vm.restartAt(0x3E80); // demo starts at 0x3E81
 	while (!_stub->_pi.quit) {
-		_log.setupScripts();
-		_log.inp_updatePlayer();
+		vm.setupScripts();
+		vm.inp_updatePlayer();
 		processInput();
-		_log.runScripts();
+		vm.runScripts();
 	}
 	finish();
 	_stub->destroy();
@@ -45,14 +45,14 @@ void Engine::setup() {
 	_vid.init();
 	_res.allocMemBlock();
 	_res.readEntries();
-	_log.init();
-	_mix.init();
+	vm.init();
+	mixer.init();
 	_ply.init();
 }
 
 void Engine::finish() {
 	_ply.free();
-	_mix.free();
+	mixer.free();
 	_res.freeMemBlock();
 }
 
@@ -66,7 +66,7 @@ void Engine::processInput() {
 		_stub->_pi.save = false;
 	}
 	if (_stub->_pi.fastMode) {
-		_log._fastMode = !_log._fastMode;
+		vm._fastMode = !vm._fastMode;
 		_stub->_pi.fastMode = false;
 	}
 	if (_stub->_pi.stateSlot != 0) {
@@ -99,11 +99,11 @@ void Engine::saveGameState(uint8 slot, const char *desc) {
 		f.write(hdrdesc, sizeof(hdrdesc));
 		// contents
 		Serializer s(&f, Serializer::SM_SAVE, _res._memPtrStart);
-		_log.saveOrLoad(s);
+		vm.saveOrLoad(s);
 		_res.saveOrLoad(s);
 		_vid.saveOrLoad(s);
 		_ply.saveOrLoad(s);
-		_mix.saveOrLoad(s);
+		mixer.saveOrLoad(s);
 		if (f.ioErr()) {
 			warning("I/O error when saving game state");
 		} else {
@@ -125,7 +125,7 @@ void Engine::loadGameState(uint8 slot) {
 		} else {
 			// mute
 			_ply.stop();
-			_mix.stopAll();
+			mixer.stopAll();
 			// header
 			uint16 ver = f.readUint16BE();
 			f.readUint16BE();
@@ -133,11 +133,11 @@ void Engine::loadGameState(uint8 slot) {
 			f.read(hdrdesc, sizeof(hdrdesc));
 			// contents
 			Serializer s(&f, Serializer::SM_LOAD, _res._memPtrStart, ver);
-			_log.saveOrLoad(s);
+			vm.saveOrLoad(s);
 			_res.saveOrLoad(s);
 			_vid.saveOrLoad(s);
 			_ply.saveOrLoad(s);
-			_mix.saveOrLoad(s);
+			mixer.saveOrLoad(s);
 		}
 		if (f.ioErr()) {
 			warning("I/O error when loading game state");

@@ -27,9 +27,6 @@
     <ClInclude Include="..\intern.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\logic.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\mixer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -54,6 +51,9 @@
     <ClInclude Include="..\video.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\vm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\bank.cpp">
@@ -63,9 +63,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\file.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\logic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\main.cpp">
@@ -93,6 +90,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\video.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

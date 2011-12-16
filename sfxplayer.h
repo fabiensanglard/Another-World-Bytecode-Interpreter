@@ -53,7 +53,7 @@ struct Serializer;
 struct SystemStub;
 
 struct SfxPlayer {
-	Mixer *_mix;
+	Mixer *mixer;
 	Resource *_res;
 	SystemStub *_stub;
 

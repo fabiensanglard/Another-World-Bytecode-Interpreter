@@ -42,6 +42,9 @@ struct Resource;
 struct Serializer;
 struct SystemStub;
 
+// This is used to detect the end of  _stringsTableEng and _stringsTableDemo
+#define END_OF_STRING_DICTIONARY 0xFFFF 
+
 struct Video {
 	typedef void (Video::*drawLine)(int16 x1, int16 x2, uint8 col);
 

@@ -183,10 +183,15 @@ int32 Video::calcStep(const Point &p1, const Point &p2, uint16 &dy) {
 	return (p2.x - p1.x) * _interpTable[dy] * 4;
 }
 
-void Video::drawString(uint8 color, uint16 x, uint16 y, uint16 strId) {
+void Video::drawString(uint8 color, uint16 x, uint16 y, uint16 stringId) {
+
 	const StrEntry *se = _stringsTableEng;
-	while (se->id != 0xFFFF && se->id != strId) ++se;
+
+	while (se->id != END_OF_STRING_DICTIONARY && se->id != stringId) 
+		++se;
+
 	debug(DBG_VIDEO, "drawString(%d, %d, %d, '%s')", color, x, y, se->str);
+
 	uint16 xx = x;
 	int len = strlen(se->str);
 	for (int i = 0; i < len; ++i) {
@@ -198,12 +203,16 @@ void Video::drawString(uint8 color, uint16 x, uint16 y, uint16 strId) {
 			++x;
 		}
 	}
+
 }
 
-void Video::drawChar(uint8 c, uint16 x, uint16 y, uint8 color, uint8 *buf) {
+void Video::drawChar(uint8 character, uint16 x, uint16 y, uint8 color, uint8 *buf) {
 	if (x <= 39 && y <= 192) {
-		const uint8 *ft = _font + (c - 0x20) * 8;
+		
+		const uint8 *ft = _font + (character - ' ') * 8;
+
 		uint8 *p = buf + x * 4 + y * 160;
+
 		for (int j = 0; j < 8; ++j) {
 			uint8 ch = *(ft + j);
 			for (int i = 0; i < 4; ++i) {

@@ -23,7 +23,8 @@
 
 
 /*
-    This is a directory entry. When the game starts, it loads memlist.bin
+    This is a directory entry. When the game starts, it loads memlist.bin and 
+	populate and array of MemEntry
 */
 struct MemEntry {
 	uint8 valid;         // 0x0

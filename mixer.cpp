@@ -50,7 +50,7 @@ void Mixer::free() {
 
 void Mixer::playChannel(uint8 channel, const MixerChunk *mc, uint16 freq, uint8 volume) {
 	debug(DBG_SND, "Mixer::playChannel(%d, %d, %d)", channel, freq, volume);
-	assert(channel < NUM_CHANNELS);
+	assert(channel < AUDIO_NUM_CHANNELS);
 	MutexStack(_stub, _mutex);
 	MixerChannel *ch = &_channels[channel];
 	ch->active = true;
@@ -62,14 +62,14 @@ void Mixer::playChannel(uint8 channel, const MixerChunk *mc, uint16 freq, uint8 
 
 void Mixer::stopChannel(uint8 channel) {
 	debug(DBG_SND, "Mixer::stopChannel(%d)", channel);
-	assert(channel < NUM_CHANNELS);
+	assert(channel < AUDIO_NUM_CHANNELS);
 	MutexStack(_stub, _mutex);	
 	_channels[channel].active = false;
 }
 
 void Mixer::setChannelVolume(uint8 channel, uint8 volume) {
 	debug(DBG_SND, "Mixer::setChannelVolume(%d, %d)", channel, volume);
-	assert(channel < NUM_CHANNELS);
+	assert(channel < AUDIO_NUM_CHANNELS);
 	MutexStack(_stub, _mutex);
 	_channels[channel].volume = volume;
 }
@@ -77,7 +77,7 @@ void Mixer::setChannelVolume(uint8 channel, uint8 volume) {
 void Mixer::stopAll() {
 	debug(DBG_SND, "Mixer::stopAll()");
 	MutexStack(_stub, _mutex);
-	for (uint8 i = 0; i < NUM_CHANNELS; ++i) {
+	for (uint8 i = 0; i < AUDIO_NUM_CHANNELS; ++i) {
 		_channels[i].active = false;		
 	}
 }
@@ -85,7 +85,7 @@ void Mixer::stopAll() {
 void Mixer::mix(int8 *buf, int len) {
 	MutexStack(_stub, _mutex);
 	memset(buf, 0, len);
-	for (uint8 i = 0; i < NUM_CHANNELS; ++i) {
+	for (uint8 i = 0; i < AUDIO_NUM_CHANNELS; ++i) {
 		MixerChannel *ch = &_channels[i];
 		if (ch->active) {
 			int8 *pBuf = buf;
@@ -127,7 +127,7 @@ void Mixer::mixCallback(void *param, uint8 *buf, int len) {
 
 void Mixer::saveOrLoad(Serializer &ser) {
 	_stub->lockMutex(_mutex);
-	for (int i = 0; i < NUM_CHANNELS; ++i) {
+	for (int i = 0; i < AUDIO_NUM_CHANNELS; ++i) {
 		MixerChannel *ch = &_channels[i];
 		Serializer::Entry entries[] = {
 			SE_INT(&ch->active, Serializer::SES_BOOL, VER(2)),

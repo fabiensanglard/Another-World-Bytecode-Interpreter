@@ -21,44 +21,44 @@
 #include "video.h"
 
 
-const Logic::OpcodeStub Logic::opcodeTable[] = {
+const VirtualMachine::OpcodeStub VirtualMachine::opcodeTable[] = {
 	/* 0x00 */
-	&Logic::op_movConst,
-	&Logic::op_mov,
-	&Logic::op_add,
-	&Logic::op_addConst,
+	&VirtualMachine::op_movConst,
+	&VirtualMachine::op_mov,
+	&VirtualMachine::op_add,
+	&VirtualMachine::op_addConst,
 	/* 0x04 */
-	&Logic::op_call,
-	&Logic::op_ret,
-	&Logic::op_break,
-	&Logic::op_jmp,
+	&VirtualMachine::op_call,
+	&VirtualMachine::op_ret,
+	&VirtualMachine::op_break,
+	&VirtualMachine::op_jmp,
 	/* 0x08 */
-	&Logic::op_setScriptSlot,
-	&Logic::op_jnz,
-	&Logic::op_condJmp,
-	&Logic::op_setPalette,
+	&VirtualMachine::op_setSetVect,
+	&VirtualMachine::op_jnz,
+	&VirtualMachine::op_condJmp,
+	&VirtualMachine::op_setPalette,
 	/* 0x0C */
-	&Logic::op_resetScript,
-	&Logic::op_selectPage,
-	&Logic::op_fillPage,
-	&Logic::op_copyPage,
+	&VirtualMachine::op_resetScript,
+	&VirtualMachine::op_selectPage,
+	&VirtualMachine::op_fillPage,
+	&VirtualMachine::op_copyPage,
 	/* 0x10 */
-	&Logic::op_updateDisplay,
-	&Logic::op_halt,
-	&Logic::op_drawString,
-	&Logic::op_sub,
+	&VirtualMachine::op_updateDisplay,
+	&VirtualMachine::op_halt,
+	&VirtualMachine::op_drawString,
+	&VirtualMachine::op_sub,
 	/* 0x14 */
-	&Logic::op_and,
-	&Logic::op_or,
-	&Logic::op_shl,
-	&Logic::op_shr,
+	&VirtualMachine::op_and,
+	&VirtualMachine::op_or,
+	&VirtualMachine::op_shl,
+	&VirtualMachine::op_shr,
 	/* 0x18 */
-	&Logic::op_playSound,
-	&Logic::op_updateMemList,
-	&Logic::op_playMusic
+	&VirtualMachine::op_playSound,
+	&VirtualMachine::op_updateMemList,
+	&VirtualMachine::op_playMusic
 };
 
-const uint16 Logic::frequenceTable[] = {
+const uint16 VirtualMachine::frequenceTable[] = {
 	0x0CFF, 0x0DC3, 0x0E91, 0x0F6F, 0x1056, 0x114E, 0x1259, 0x136C, 
 	0x149F, 0x15D9, 0x1726, 0x1888, 0x19FD, 0x1B86, 0x1D21, 0x1EDE, 
 	0x20AB, 0x229C, 0x24B3, 0x26D7, 0x293F, 0x2BB2, 0x2E4C, 0x3110, 
@@ -129,6 +129,7 @@ const uint8 Video::_font[] = {
 	0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0x00, 0x38, 0x44, 0xBA, 0xA2, 0xBA, 0x44, 0x38, 0x00,
 	0x38, 0x44, 0x82, 0x82, 0x44, 0x28, 0xEE, 0x00, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA
 };
+
 
 const StrEntry Video::_stringsTableEng[] = {
 	{ 0x001, "P E A N U T  3000" },
@@ -271,7 +272,7 @@ const StrEntry Video::_stringsTableEng[] = {
 	{ 0x193, "Monsieur est en parfaite sante." },
 	{ 0x194, "Y\n" },
 	{ 0x193, "AU BOULOT !!!\n" },
-	{ 0xFFFF, "" }
+	{ END_OF_STRING_DICTIONARY, "" }
 };
 
 const StrEntry Video::_stringsTableDemo[] = {

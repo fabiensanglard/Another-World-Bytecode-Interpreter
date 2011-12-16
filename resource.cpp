@@ -163,6 +163,7 @@ void Resource::update(uint16 num) {
 }
 
 void Resource::setupPtrs(uint16 ptrId) {
+
 	if (ptrId != _curPtrsId) {
 
 		uint8 ipal = 0;

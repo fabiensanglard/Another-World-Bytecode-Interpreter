@@ -24,7 +24,7 @@
 
 
 SfxPlayer::SfxPlayer(Mixer *mix, Resource *res, SystemStub *stub)
-	: _mix(mix), _res(res), _stub(stub), _delay(0), _resNum(0) {
+	: mixer(mix), _res(res), _stub(stub), _delay(0), _resNum(0) {
 }
 
 void SfxPlayer::init() {
@@ -121,7 +121,7 @@ void SfxPlayer::handleEvents() {
 		if (order == _sfxMod.numOrder) {
 			_resNum = 0;
 			_stub->removeTimer(_timerId);
-			_mix->stopAll();
+			mixer->stopAll();
 		}
 		_sfxMod.curOrder = order;
 	}
@@ -167,7 +167,7 @@ void SfxPlayer::handlePattern(uint8 channel, const uint8 *data) {
 						m = 0;
 					}	
 				}
-				_mix->setChannelVolume(channel, m);
+				mixer->setChannelVolume(channel, m);
 				pat.sampleVolume = m;
 			}
 		}
@@ -177,7 +177,7 @@ void SfxPlayer::handlePattern(uint8 channel, const uint8 *data) {
 		*_markVar = pat.note_2;
 	} else if (pat.note_1 != 0) {
 		if (pat.note_1 == 0xFFFE) {
-			_mix->stopChannel(channel);
+			mixer->stopChannel(channel);
 		} else if (pat.sampleBuffer != 0) {
 			MixerChunk mc;
 			memset(&mc, 0, sizeof(mc));
@@ -189,7 +189,7 @@ void SfxPlayer::handlePattern(uint8 channel, const uint8 *data) {
 			// convert amiga period value to hz
 			uint16 freq = 7159092 / (pat.note_1 * 2);
 			debug(DBG_SND, "SfxPlayer::handlePattern() adding sample freq = 0x%X", freq);
-			_mix->playChannel(channel, &mc, freq, pat.sampleVolume);
+			mixer->playChannel(channel, &mc, freq, pat.sampleVolume);
 		}
 	}
 }

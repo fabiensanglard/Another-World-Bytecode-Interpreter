@@ -86,7 +86,7 @@
     <ClInclude Include="..\engine.h" />
     <ClInclude Include="..\file.h" />
     <ClInclude Include="..\intern.h" />
-    <ClInclude Include="..\logic.h" />
+    <ClInclude Include="..\vm.h" />
     <ClInclude Include="..\mixer.h" />
     <ClInclude Include="..\resource.h" />
     <ClInclude Include="..\serializer.h" />
@@ -100,7 +100,7 @@
     <ClCompile Include="..\bank.cpp" />
     <ClCompile Include="..\engine.cpp" />
     <ClCompile Include="..\file.cpp" />
-    <ClCompile Include="..\logic.cpp" />
+    <ClCompile Include="..\vm.cpp" />
     <ClCompile Include="..\main.cpp" />
     <ClCompile Include="..\mixer.cpp" />
     <ClCompile Include="..\resource.cpp" />
