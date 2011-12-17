@@ -22,19 +22,14 @@
 #include "sys.h"
 
 
-Engine::Engine(System *stub, const char *dataDir, const char *saveDir)
-	: _stub(stub), vm(&mixer, &_res, &player, &video, _stub), mixer(_stub), _res(&video, dataDir), 
-	player(&mixer, &_res, _stub), video(&_res, stub), _dataDir(dataDir), _saveDir(saveDir), _stateSlot(0) {
+Engine::Engine(System *paramSys, const char *dataDir, const char *saveDir)
+	: _stub(paramSys), vm(&mixer, &_res, &player, &video, _stub), mixer(_stub), _res(&video, dataDir), 
+	player(&mixer, &_res, _stub), video(&_res, _stub), _dataDir(dataDir), _saveDir(saveDir), _stateSlot(0) {
 }
 
 void Engine::run() {
-	_stub->init("Out Of This World");
-	setup();
 
-	vm.restartAt(0x3E80); // demo starts at 0x3E81
-
-
-	while (!_stub->_pi.quit) {
+	while (!_stub->input.quit) {
 
 		vm.setupScripts();
 
@@ -44,17 +39,38 @@ void Engine::run() {
 
 		vm.hostFrame();
 	}
+
+
+}
+
+Engine::~Engine(){
+
 	finish();
 	_stub->destroy();
 }
 
-void Engine::setup() {
+
+void Engine::init() {
+
+	
+	//Init system
+	_stub->init("Out Of This World");
+
 	video.init();
+
 	_res.allocMemBlock();
+
 	_res.readEntries();
+
 	vm.init();
+
 	mixer.init();
+
 	player.init();
+
+	//Init virtual machine
+	vm.initWithByteCodeAddress(VM_BYTECODE_STARTUP_ADDRESS); // demo starts at 0x3E81
+
 }
 
 void Engine::finish() {
@@ -64,25 +80,25 @@ void Engine::finish() {
 }
 
 void Engine::processInput() {
-	if (_stub->_pi.load) {
+	if (_stub->input.load) {
 		loadGameState(_stateSlot);
-		_stub->_pi.load = false;
+		_stub->input.load = false;
 	}
-	if (_stub->_pi.save) {
+	if (_stub->input.save) {
 		saveGameState(_stateSlot, "quicksave");
-		_stub->_pi.save = false;
+		_stub->input.save = false;
 	}
-	if (_stub->_pi.fastMode) {
+	if (_stub->input.fastMode) {
 		vm._fastMode = !vm._fastMode;
-		_stub->_pi.fastMode = false;
+		_stub->input.fastMode = false;
 	}
-	if (_stub->_pi.stateSlot != 0) {
-		int8 slot = _stateSlot + _stub->_pi.stateSlot;
+	if (_stub->input.stateSlot != 0) {
+		int8 slot = _stateSlot + _stub->input.stateSlot;
 		if (slot >= 0 && slot < MAX_SAVE_SLOTS) {
 			_stateSlot = slot;
 			debug(DBG_INFO, "Current game state slot is %d", _stateSlot);
 		}
-		_stub->_pi.stateSlot = 0;
+		_stub->input.stateSlot = 0;
 	}
 }
 

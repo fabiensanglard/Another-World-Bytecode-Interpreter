@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef __System_H__
-#define __System_H__
+#ifndef __SYSTEM_H__
+#define __SYSTEM_H__
 
 #include "intern.h"
 
@@ -47,7 +47,7 @@ struct System {
 	typedef void (*AudioCallback)(void *param, uint8 *stream, int len);
 	typedef uint32 (*TimerCallback)(uint32 delay, void *param);
 	
-	PlayerInput _pi;
+	PlayerInput input;
 
 	virtual ~System() {}
 
@@ -87,11 +87,6 @@ struct MutexStack {
 	}
 };
 
-/*
-	We use here a design pattern found in Doom3:
-	An Abstract Class pointer
-*/
-//extern System *System_SDL_create();
-extern System *stub ;//= System_SDL_create();
+
 
 #endif

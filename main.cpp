@@ -38,6 +38,13 @@ static bool parseOption(const char *arg, const char *longCmd, const char **opt) 
 	return ret;
 }
 
+/*
+	We use here a design pattern found in Doom3:
+	An Abstract Class pointer pointing to the implementation on the Heap.
+*/
+//extern System *System_SDL_create();
+extern System *stub ;//= System_SDL_create();
+
 #undef main
 int main(int argc, char *argv[]) {
 	const char *dataPath = ".";
@@ -55,13 +62,18 @@ int main(int argc, char *argv[]) {
 	}
 	//FCS
 	//g_debugMask = DBG_INFO; // DBG_VM | DBG_BANK | DBG_VIDEO | DBG_SER | DBG_SND
-	g_debugMask = DBG_RES ;
+	g_debugMask = 0;//DBG_RES ;
 	//g_debugMask = 0 ;//DBG_INFO |  DBG_VM | DBG_BANK | DBG_VIDEO | DBG_SER | DBG_SND ;
 	
-	Engine *e = new Engine(stub, dataPath, savePath);
+	Engine* e = new Engine(stub, dataPath, savePath);
+	e->init();
 	e->run();
+
+
 	delete e;
-	delete stub;
+
+	//delete stub;
+
 	return 0;
 }
 
@@ -82,26 +94,29 @@ int main(int argc, char *argv[]) {
    Call tree:
    =========
 
+   SDLSystem       systemImplementaion ;
+   System *sys = & systemImplementaion ;
+
    main
    {
-       System *stub = System_SDL_create();
+       
        Engine *e = new Engine();
 	   e->run()
 	   {
-	      _stub->init("Out Of This World");
+	      sys->init("Out Of This World");
 		  setup();
-	      _log.restartAt(0x3E80); // demo starts at 0x3E81
+	      vm.restartAt(0x3E80); // demo starts at 0x3E81
 
 	     while (!_stub->_pi.quit) 
 		 {
-		   _log.setupScripts();
-		   _log.inp_updatePlayer();
+		   vm.setupScripts();
+		   vm.inp_updatePlayer();
 		    processInput();
-		   _log.runScripts();
+		   vm.runScripts();
 	     }
 
 	     finish();
-	     _stub->destroy();
+	     
 	   }
    }
 

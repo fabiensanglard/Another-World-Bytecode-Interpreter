@@ -92,7 +92,7 @@
     <ClCompile Include="..\vm.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\sys.cpp">
+    <ClCompile Include="..\sysImplementation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

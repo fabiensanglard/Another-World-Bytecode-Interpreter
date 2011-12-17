@@ -25,6 +25,7 @@
 #include "sfxplayer.h"
 #include "sys.h"
 
+//#define BYPASS_PROTECTION 1
 
 VirtualMachine::VirtualMachine(Mixer *mix, Resource *res, SfxPlayer *ply, Video *vid, System *stub)
 	: mixer(mix), _res(res), player(ply), video(vid), _stub(stub) {
@@ -144,6 +145,8 @@ void VirtualMachine::op_condJmp() {
 		*(_scriptPtr.pc + 0x99) = 0x0D;
 		*(_scriptPtr.pc + 0x9A) = 0x5A;
 		printf("VirtualMachine::op_condJmp() bypassing protection");
+
+		//exit(0);
 	}
 #endif
 
@@ -376,7 +379,7 @@ void VirtualMachine::op_playMusic() {
 	snd_playMusic(resNum, delay, pos);
 }
 
-void VirtualMachine::restartAt(uint16 ptrId) {
+void VirtualMachine::initWithByteCodeAddress(uint16 ptrId) {
 
 	player->stop();
 	mixer->stopAll();
@@ -398,7 +401,7 @@ void VirtualMachine::setupScripts() {
 
 
 	if (_res->_newPtrsId != 0) {
-		restartAt(_res->_newPtrsId);
+		initWithByteCodeAddress(_res->_newPtrsId);
 		_res->_newPtrsId = 0;
 	}
 
@@ -456,7 +459,7 @@ void VirtualMachine::hostFrame() {
 
 
 			debug(DBG_VM, "VirtualMachine::hostFrame() i=0x%02X pos=0x%X", i, _scriptSlotsPos[0][i]);
-			if (_stub->_pi.quit) {
+			if (_stub->input.quit) {
 				break;
 			}
 		}
@@ -566,10 +569,10 @@ void VirtualMachine::inp_updatePlayer() {
 	_stub->processEvents();
 
 	if (_res->_curPtrsId == 0x3E89) {
-		char c = _stub->_pi.lastChar;
+		char c = _stub->input.lastChar;
 		if (c == 8 | /*c == 0xD |*/ c == 0 | (c >= 'a' && c <= 'z')) {
 			vmVariables[VM_VARIABLE_LAST_KEYCHAR] = c & ~0x20;
-			_stub->_pi.lastChar = 0;
+			_stub->input.lastChar = 0;
 		}
 	}
 
@@ -577,26 +580,26 @@ void VirtualMachine::inp_updatePlayer() {
 	int16 m = 0;
 	int16 ud = 0;
 
-	if (_stub->_pi.dirMask & PlayerInput::DIR_RIGHT) {
+	if (_stub->input.dirMask & PlayerInput::DIR_RIGHT) {
 		lr = 1;
 		m |= 1;
 	}
-	if (_stub->_pi.dirMask & PlayerInput::DIR_LEFT) {
+	if (_stub->input.dirMask & PlayerInput::DIR_LEFT) {
 		lr = -1;
 		m |= 2;
 	}
-	if (_stub->_pi.dirMask & PlayerInput::DIR_DOWN) {
+	if (_stub->input.dirMask & PlayerInput::DIR_DOWN) {
 		ud = 1;
 		m |= 4;
 	}
 
 	vmVariables[VM_VARIABLE_HERO_POS_UP_DOWN] = ud;
 
-	if (_stub->_pi.dirMask & PlayerInput::DIR_UP) {
+	if (_stub->input.dirMask & PlayerInput::DIR_UP) {
 		vmVariables[VM_VARIABLE_HERO_POS_UP_DOWN] = -1;
 	}
 
-	if (_stub->_pi.dirMask & PlayerInput::DIR_UP) { // inpJump
+	if (_stub->input.dirMask & PlayerInput::DIR_UP) { // inpJump
 		ud = -1;
 		m |= 8;
 	}
@@ -606,7 +609,7 @@ void VirtualMachine::inp_updatePlayer() {
 	vmVariables[VM_VARIABLE_HERO_POS_MASK] = m;
 	int16 button = 0;
 
-	if (_stub->_pi.button) { // inpButton
+	if (_stub->input.button) { // inpButton
 		button = 1;
 		m |= 0x80;
 	}
@@ -617,21 +620,21 @@ void VirtualMachine::inp_updatePlayer() {
 
 void VirtualMachine::inp_handleSpecialKeys() {
 
-	if (_stub->_pi.pause) {
+	if (_stub->input.pause) {
 
 		if (_res->_curPtrsId != 0x3E80 && _res->_curPtrsId != 0x3E81) {
-			_stub->_pi.pause = false;
-			while (!_stub->_pi.pause) {
+			_stub->input.pause = false;
+			while (!_stub->input.pause) {
 				_stub->processEvents();
 				_stub->sleep(200);
 			}
 		}
-		_stub->_pi.pause = false;
+		_stub->input.pause = false;
 	}
 
-	if (_stub->_pi.code) {
-		_stub->_pi.code = false;
-		if (_res->_curPtrsId != 0x3E89 && _res->_curPtrsId != 0x3E80) {
+	if (_stub->input.code) {
+		_stub->input.code = false;
+		if (_res->_curPtrsId != 0x3E89 && _res->_curPtrsId != VM_BYTECODE_STARTUP_ADDRESS) {
 			_res->_newPtrsId = 0x3E89;
 		}
 	}

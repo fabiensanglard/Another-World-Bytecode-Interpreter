@@ -19,7 +19,7 @@
 #ifndef __LOGIC_H__
 #define __LOGIC_H__
 
-#define BYPASS_PROTECTION 1
+
 
 #include "intern.h"
 
@@ -27,6 +27,8 @@
 #define VM_NUM_VARIABLES 256
 #define VM_NO_SETVEC_REQUESTED 0xFFFF
 #define VM_INACTIVE_THREAD    0xFFFF
+
+#define VM_BYTECODE_STARTUP_ADDRESS 0x3E80
 
 enum ScriptVars {
 		VM_VARIABLE_RANDOM_SEED          = 0x3C,
@@ -127,7 +129,7 @@ struct VirtualMachine {
 	void op_updateMemList();
 	void op_playMusic();
 
-	void restartAt(uint16 ptrId);
+	void initWithByteCodeAddress(uint16 ptrId);
 	void setupPtrs(uint16 ptrId);
 	void setupScripts();
 	void hostFrame();

@@ -43,9 +43,10 @@ struct Engine {
 	uint8 _stateSlot;
 
 	Engine(System *stub, const char *dataDir, const char *saveDir);
+	~Engine();
 
 	void run();
-	void setup();
+	void init();
 	void finish();
 	void processInput();
 	

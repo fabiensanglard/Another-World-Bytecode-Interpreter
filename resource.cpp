@@ -209,6 +209,8 @@ void Resource::update(uint16 resourceId) {
 
 void Resource::setupPtrs(uint16 ptrId) {
 
+	printf("setupPtrs %X\n",ptrId);
+
 	if (ptrId != _curPtrsId) {
 
 		uint8 ipal = 0;
