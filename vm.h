@@ -111,7 +111,7 @@ struct VirtualMachine {
 	void op_jnz();
 	void op_condJmp();
 	void op_setPalette();
-	void op_resetScript();
+	void op_resetThread();
 	void op_selectPage();
 	void op_fillPage();
 	void op_copyPage();

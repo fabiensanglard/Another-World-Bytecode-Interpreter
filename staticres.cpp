@@ -38,7 +38,7 @@ const VirtualMachine::OpcodeStub VirtualMachine::opcodeTable[] = {
 	&VirtualMachine::op_condJmp,
 	&VirtualMachine::op_setPalette,
 	/* 0x0C */
-	&VirtualMachine::op_resetScript,
+	&VirtualMachine::op_resetThread,
 	&VirtualMachine::op_selectPage,
 	&VirtualMachine::op_fillPage,
 	&VirtualMachine::op_copyPage,

@@ -21,6 +21,7 @@
 #include "file.h"
 #include "serializer.h"
 #include "video.h"
+#include "util.h"
 
 
 Resource::Resource(Video *vid, const char *dataDir) 
@@ -30,68 +31,88 @@ Resource::Resource(Video *vid, const char *dataDir)
 void Resource::readBank(const MemEntry *me, uint8 *dstBuf) {
 	uint16 n = me - _memList;
 	debug(DBG_BANK, "Resource::readBank(%d)", n);
-#ifdef USE_UNPACKED_DATA
-	char bankEntryName[64];
-	sprintf(bankEntryName, "ootw-%02X-%d.dump", n, me->type);
-	File f;
-	if (!f.open(bankEntryName, _dataDir)) {
-		error("Resource::readBank() unable to open '%s' file\n", bankEntryName);
-	}
-	f.read(dstBuf, me->unpackedSize);
-#else
+
 	Bank bk(_dataDir);
 	if (!bk.read(me, dstBuf)) {
 		error("Resource::readBank() unable to unpack entry %d\n", n);
 	}
-#endif
+
 }
 
 char* resTypeToString[]=
 {
-	"RT_SOUND",
-	"RT_MUSIC",
+	"RT_SOUND ",
+	"RT_MUSIC ",
 	"RT_VIDBUF", 
-	"RT_PAL", 
+	"RT_PAL   ", 
 	"RT_SCRIPT",
-	"RT_VBMP"
+	"RT_VBMP  "
 };
 
+int resourceSizeStats[7];
+#define STATS_TOTAL_SIZE 6
+int resourceUnitStats[7];
+
+/*
+	Read all entries from memlist.bin. Do not load anything in memory,
+	this is just a fast way to access the data later based on their id.
+*/
 void Resource::readEntries() {	
 	File f;
 	int resourceCounter = 0;
-	int size;
+	
 
 	if (!f.open("memlist.bin", _dataDir)) {
 		error("Resource::readEntries() unable to open 'memlist.bin' file\n");
 		//Error will exit() no need to return or do anything else.
 	}
 
+	//Prepare stats array
+	memset(resourceSizeStats,0,sizeof(resourceSizeStats));
+	memset(resourceUnitStats,0,sizeof(resourceUnitStats));
+
 	_numMemList = 0;
-	MemEntry *me = _memList;
+	MemEntry *memEntry = _memList;
 	while (1) {
 		assert(_numMemList < ARRAYSIZE(_memList));
-		me->valid = f.readByte();
-		me->type = f.readByte();
-		me->bufPtr = 0; f.readUint16BE();
-		me->unk4 = f.readUint16BE();
-		me->rankNum = f.readByte();
-		me->bankNum = f.readByte();
-		me->bankPos = f.readUint32BE();
-		me->unkC = f.readUint16BE();
-		me->packedSize = f.readUint16BE();
-		me->unk10 = f.readUint16BE();
-		me->unpackedSize = f.readUint16BE();
+		memEntry->valid = f.readByte();
+		memEntry->type = f.readByte();
+		memEntry->bufPtr = 0; f.readUint16BE();
+		memEntry->unk4 = f.readUint16BE();
+		memEntry->rankNum = f.readByte();
+		memEntry->bankId = f.readByte();
+		memEntry->bankOffset = f.readUint32BE();
+		memEntry->unkC = f.readUint16BE();
+		memEntry->packedSize = f.readUint16BE();
+		memEntry->unk10 = f.readUint16BE();
+		memEntry->size = f.readUint16BE();
 
+		//Memory tracking
+		resourceSizeStats[memEntry->type] += memEntry->packedSize;
+		resourceSizeStats[STATS_TOTAL_SIZE] += memEntry->packedSize;
 
-		printf("R:%3d, %s size=%5d (compacted=%d)\n",resourceCounter,resTypeToString[resourceCounter],me->unpackedSize,me->packedSize==me->unpackedSize);
-        resourceCounter++;
+		resourceUnitStats[memEntry->type]++;
+        resourceUnitStats[STATS_TOTAL_SIZE]++;
 
-		if (me->valid == 0xFF) {
+		if (memEntry->valid == 0xFF) {
 			break;
 		}
-		++_numMemList;
-		++me;
+
+		debug(DBG_RES,"R:%3d, %s size=%5d (compacted=%d)",resourceCounter,resTypeToString[memEntry->type],memEntry->size,memEntry->packedSize==memEntry->size);	
+		resourceCounter++;
+
+		_numMemList++;
+		memEntry++;
 	}
+
+	debug(DBG_RES,"\nTotal bank      size: %7d",resourceSizeStats[STATS_TOTAL_SIZE]);
+	for(int i=0 ; i < 6 ; i++)
+		debug(DBG_RES,"Total %s size: %7d (%2.0f%%)",resTypeToString[i],resourceSizeStats[i],100*resourceSizeStats[i]/(float)resourceSizeStats[STATS_TOTAL_SIZE]);
+
+	debug(DBG_RES,"\nTotal bank      files: %d",resourceUnitStats[STATS_TOTAL_SIZE]);
+	for(int i=0 ; i < 6 ; i++)
+		debug(DBG_RES,"Total %s files: %3d",resTypeToString[i],resourceUnitStats[i]);
+
 }
 
 void Resource::load() {
@@ -110,17 +131,21 @@ void Resource::load() {
 			}
 			++it;
 		}
-
+		
 		if (me == NULL) {
 			break; // no entry found
 		}
 
+		
+		// At this point the resource descriptor should be in "me"
+		// "That's what she said"
+
 		uint8 *loadDestination = NULL;
-		if (me->type == 2) {
+		if (me->type == ResType::RT_VIDBUF) {
 			loadDestination = _vidCurPtr;
 		} else {
 			loadDestination = _scriptCurPtr;
-			if (me->unpackedSize > _vidBakPtr - _scriptCurPtr) {
+			if (me->size > _vidBakPtr - _scriptCurPtr) {
 				warning("Resource::load() not enough memory");
 				me->valid = 0;
 				continue;
@@ -128,19 +153,19 @@ void Resource::load() {
 		}
 
 
-		if (me->bankNum == 0) {
-			warning("Resource::load() ec=0x%X (me->bankNum == 0)", 0xF00);
+		if (me->bankId == 0) {
+			warning("Resource::load() ec=0x%X (me->bankId == 0)", 0xF00);
 			me->valid = 0;
 		} else {
-			debug(DBG_BANK, "Resource::load() bufPos=%X size=%X type=%X pos=%X bankNum=%X", loadDestination - _memPtrStart, me->packedSize, me->type, me->bankPos, me->bankNum);
+			debug(DBG_BANK, "Resource::load() bufPos=%X size=%X type=%X pos=%X bankId=%X", loadDestination - _memPtrStart, me->packedSize, me->type, me->bankOffset, me->bankId);
 			readBank(me, loadDestination);
-			if(me->type == 2) {
+			if(me->type == ResType::RT_VIDBUF) {
 				video->copyPagePtr(_vidCurPtr);
 				me->valid = 0;
 			} else {
 				me->bufPtr = loadDestination;
 				me->valid = 1;
-				_scriptCurPtr += me->unpackedSize;
+				_scriptCurPtr += me->size;
 			}
 		}
 	}
@@ -150,7 +175,7 @@ void Resource::invalidateRes() {
 	MemEntry *me = _memList;
 	uint16 i = _numMemList;
 	while (i--) {
-		if (me->type <= 2 || me->type > 6) {
+		if (me->type <= ResType::RT_VIDBUF || me->type > 6) {  // 6 WTF ?!?! ResType goes up to 5 !!
 			me->valid = 0;
 		}
 		++me;
@@ -168,11 +193,11 @@ void Resource::invalidateAll() {
 	_scriptCurPtr = _memPtrStart;
 }
 
-void Resource::update(uint16 num) {
-	if (num > _numMemList) {
-		_newPtrsId = num;
+void Resource::update(uint16 resourceId) {
+	if (resourceId > _numMemList) {
+		_newPtrsId = resourceId;
 	} else {
-		MemEntry *me = &_memList[num];
+		MemEntry *me = &_memList[resourceId];
 		if (me->valid == 0) {
 			me->valid = 2;
 			load();
@@ -252,7 +277,7 @@ void Resource::saveOrLoad(Serializer &ser) {
 			} else {
 				assert(p < loadedList + 64);
 				*p++ = me - _memList;
-				q += me->unpackedSize;
+				q += me->size;
 			}
 		}
 	}
@@ -281,7 +306,7 @@ void Resource::saveOrLoad(Serializer &ser) {
 			readBank(me, q);
 			me->bufPtr = q;
 			me->valid = 1;
-			q += me->unpackedSize;
+			q += me->size;
 		}
 	}	
 }

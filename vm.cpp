@@ -196,17 +196,17 @@ void VirtualMachine::op_condJmp() {
 }
 
 void VirtualMachine::op_setPalette() {
-	uint16 i = _scriptPtr.fetchWord();
-	debug(DBG_VM, "VirtualMachine::op_changePalette(%d)", i);
-	video->paletteIdRequested = i >> 8;
+	uint16 paletteId = _scriptPtr.fetchWord();
+	debug(DBG_VM, "VirtualMachine::op_changePalette(%d)", paletteId);
+	video->paletteIdRequested = paletteId >> 8;
 }
 
-void VirtualMachine::op_resetScript() {
+void VirtualMachine::op_resetThread() {
 
 	uint8 threadId = _scriptPtr.fetchByte();
 	uint8 i =        _scriptPtr.fetchByte();
 
-	// FCS: WTF cryptic as hell !!
+	// FCS: WTF, this is cryptic as hell !!
 	//int8 n = (i & 0x3F) - threadId;  //0x3F = 0011 1111
 	// The following is so much clearer
 
@@ -215,13 +215,13 @@ void VirtualMachine::op_resetScript() {
 	int8 n = i - threadId;
 
 	if (n < 0) {
-		warning("VirtualMachine::op_resetScript() ec=0x%X (n < 0)", 0x880);
+		warning("VirtualMachine::op_resetThread() ec=0x%X (n < 0)", 0x880);
 		return;
 	}
 	++n;
 	uint8 a = _scriptPtr.fetchByte();
 
-	debug(DBG_VM, "VirtualMachine::op_resetScript(%d, %d, %d)", threadId, i, a);
+	debug(DBG_VM, "VirtualMachine::op_resetThread(%d, %d, %d)", threadId, i, a);
 
 	if (a == 2) {
 		uint16 *p = &_scriptSlotsPos[1][threadId];
@@ -237,9 +237,9 @@ void VirtualMachine::op_resetScript() {
 }
 
 void VirtualMachine::op_selectPage() {
-	uint8 i = _scriptPtr.fetchByte();
-	debug(DBG_VM, "VirtualMachine::op_selectPage(%d)", i);
-	video->changePagePtr1(i);
+	uint8 frameBufferId = _scriptPtr.fetchByte();
+	debug(DBG_VM, "VirtualMachine::op_selectPage(%d)", frameBufferId);
+	video->changePagePtr1(frameBufferId);
 }
 
 void VirtualMachine::op_fillPage() {
@@ -346,25 +346,25 @@ void VirtualMachine::op_shr() {
 }
 
 void VirtualMachine::op_playSound() {
-	uint16 resNum = _scriptPtr.fetchWord();
+	uint16 resourceId = _scriptPtr.fetchWord();
 	uint8 freq = _scriptPtr.fetchByte();
 	uint8 vol = _scriptPtr.fetchByte();
 	uint8 channel = _scriptPtr.fetchByte();
-	debug(DBG_VM, "VirtualMachine::op_playSound(0x%X, %d, %d, %d)", resNum, freq, vol, channel);
-	snd_playSound(resNum, freq, vol, channel);
+	debug(DBG_VM, "VirtualMachine::op_playSound(0x%X, %d, %d, %d)", resourceId, freq, vol, channel);
+	snd_playSound(resourceId, freq, vol, channel);
 }
 
 void VirtualMachine::op_updateMemList() {
 
-	uint16 num = _scriptPtr.fetchWord();
-	debug(DBG_VM, "VirtualMachine::op_updateMemList(%d)", num);
+	uint16 resourceId = _scriptPtr.fetchWord();
+	debug(DBG_VM, "VirtualMachine::op_updateMemList(%d)", resourceId);
 
-	if (num == 0) {
+	if (resourceId == 0) {
 		player->stop();
 		mixer->stopAll();
 		_res->invalidateRes();
 	} else {
-		_res->update(num);
+		_res->update(resourceId);
 	}
 }
 
@@ -644,29 +644,36 @@ void VirtualMachine::inp_handleSpecialKeys() {
 }
 
 void VirtualMachine::snd_playSound(uint16 resNum, uint8 freq, uint8 vol, uint8 channel) {
+
 	debug(DBG_SND, "snd_playSound(0x%X, %d, %d, %d)", resNum, freq, vol, channel);
 	
 	MemEntry *me = &_res->_memList[resNum];
-	if (me->valid == 1) {
-		if (vol == 0) {
-			mixer->stopChannel(channel);
-		} else {
-			MixerChunk mc;
-			memset(&mc, 0, sizeof(mc));
-			mc.data = me->bufPtr + 8; // skip header
-			mc.len = READ_BE_UINT16(me->bufPtr) * 2;
-			mc.loopLen = READ_BE_UINT16(me->bufPtr + 2) * 2;
-			if (mc.loopLen != 0) {
-				mc.loopPos = mc.len;
-			}
-			assert(freq < 40);
-			mixer->playChannel(channel & 3, &mc, frequenceTable[freq], MIN(vol, 0x3F));
+
+	if (me->valid != 1)
+		return;
+
+	
+	if (vol == 0) {
+		mixer->stopChannel(channel);
+	} else {
+		MixerChunk mc;
+		memset(&mc, 0, sizeof(mc));
+		mc.data = me->bufPtr + 8; // skip header
+		mc.len = READ_BE_UINT16(me->bufPtr) * 2;
+		mc.loopLen = READ_BE_UINT16(me->bufPtr + 2) * 2;
+		if (mc.loopLen != 0) {
+			mc.loopPos = mc.len;
 		}
+		assert(freq < 40);
+		mixer->playChannel(channel & 3, &mc, frequenceTable[freq], MIN(vol, 0x3F));
 	}
+	
 }
 
 void VirtualMachine::snd_playMusic(uint16 resNum, uint16 delay, uint8 pos) {
+
 	debug(DBG_SND, "snd_playMusic(0x%X, %d, %d)", resNum, delay, pos);
+
 	if (resNum != 0) {
 		player->loadSfxModule(resNum, delay, pos);
 		player->start();

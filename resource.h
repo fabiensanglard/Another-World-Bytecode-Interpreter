@@ -32,14 +32,14 @@ struct MemEntry {
 	uint8 *bufPtr;       // 0x2
 	uint16 unk4;         // 0x4, unused
 	uint8 rankNum;       // 0x6
-	uint8 bankNum;       // 0x7
-	uint32 bankPos;      // 0x8 0xA
+	uint8 bankId;       // 0x7
+	uint32 bankOffset;      // 0x8 0xA
 	uint16 unkC;         // 0xC, unused
 	uint16 packedSize;   // 0xE
 	                     // All ressources are packed (for a gain of 28% according to Chahi)
 
 	uint16 unk10;        // 0x10, unused
-	uint16 unpackedSize; // 0x12
+	uint16 size; // 0x12
 };
 /*
      Note: valid is not a boolean, it can have value 0, 1 or 2. WTF ?!

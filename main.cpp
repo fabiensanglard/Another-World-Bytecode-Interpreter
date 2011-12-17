@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
 	}
 	//FCS
 	//g_debugMask = DBG_INFO; // DBG_VM | DBG_BANK | DBG_VIDEO | DBG_SER | DBG_SND
-	//g_debugMask = DBG_VM ;
+	g_debugMask = DBG_RES ;
 	//g_debugMask = 0 ;//DBG_INFO |  DBG_VM | DBG_BANK | DBG_VIDEO | DBG_SER | DBG_SND ;
 	SystemStub *stub = SystemStub_SDL_create();
 	Engine *e = new Engine(stub, dataPath, savePath);
@@ -171,6 +171,45 @@ int main(int argc, char *argv[]) {
       should be displayed in variable 0xFF. The value is the number of 20ms slice
 
 
+   Orignial DOS version :
+   ======================
+
+   Banks: 1,236,519 B
+   exe  :    20,293 B
 
 
+   Total bank      size: 1236519 (100%)
+   ---------------------------------
+   Total RT_SOUND  size: 585052  ( 47%)
+   Total RT_MUSIC  size:   3540  (  0%)
+   Total RT_VIDBUF size: 106676  (  9%)
+   Total RT_PAL    size:  11032  (  1%)
+   Total RT_SCRIPT size: 135948  ( 11%)
+   Total RT_VBMP   size: 291008  ( 24%)
+
+   As usual sounds are the most consuming assets (Quake1,Quake2 etc.....)
+
+
+   memlist.bin features 146 entries :
+   ==================================
+
+   Most important part in an entry are:
+
+   bankId          : - Give the file were the resource is.
+   offset          : - How much to skip in the file before hiting the resource.
+   size,packetSize : - How much to read, should we unpack what we read.
+
+
+
+
+
+
+   TODO :
+   ======
+
+       - Remove protection.
+	   - Add OpenGL support.
+	   - Add screenshot capability.
+	   - Try to run with "Another World" asset instead of "Out Of This World" assets.
+	   - Find where bitmap background are used...
 */

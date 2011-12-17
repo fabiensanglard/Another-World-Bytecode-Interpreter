@@ -26,27 +26,30 @@ Bank::Bank(const char *dataDir)
 }
 
 bool Bank::read(const MemEntry *me, uint8 *buf) {
+
 	bool ret = false;
 	char bankName[10];
-	sprintf(bankName, "bank%02x", me->bankNum);
+	sprintf(bankName, "bank%02x", me->bankId);
 	File f;
-	if (f.open(bankName, _dataDir)) {
-		f.seek(me->bankPos);
 
-		// Depending if the resource is packed or not we
-		// can read directly or unpack it.
-		if (me->packedSize == me->unpackedSize) {
-			f.read(buf, me->packedSize);
-			ret = true;
-		} else {
-			f.read(buf, me->packedSize);
-			_startBuf = buf;
-			_iBuf = buf + me->packedSize - 4;
-			ret = unpack();
-		}
-	} else {
+	if (!f.open(bankName, _dataDir))
 		error("Bank::read() unable to open '%s'", bankName);
+
+	
+	f.seek(me->bankOffset);
+
+	// Depending if the resource is packed or not we
+	// can read directly or unpack it.
+	if (me->packedSize == me->size) {
+		f.read(buf, me->packedSize);
+		ret = true;
+	} else {
+		f.read(buf, me->packedSize);
+		_startBuf = buf;
+		_iBuf = buf + me->packedSize - 4;
+		ret = unpack();
 	}
+	
 	return ret;
 }
 
