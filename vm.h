@@ -28,7 +28,6 @@
 #define VM_NO_SETVEC_REQUESTED 0xFFFF
 #define VM_INACTIVE_THREAD    0xFFFF
 
-#define VM_BYTECODE_STARTUP_ADDRESS 0x3E80
 
 enum ScriptVars {
 		VM_VARIABLE_RANDOM_SEED          = 0x3C,
@@ -129,8 +128,8 @@ struct VirtualMachine {
 	void op_updateMemList();
 	void op_playMusic();
 
-	void initWithByteCodeAddress(uint16 ptrId);
-	void setupPtrs(uint16 ptrId);
+	void initForPart(uint16 partId);
+	void setupPart(uint16 partId);
 	void setupScripts();
 	void hostFrame();
 	void executeScript();

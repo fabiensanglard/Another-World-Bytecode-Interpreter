@@ -20,7 +20,7 @@
 #include "file.h"
 #include "serializer.h"
 #include "sys.h"
-
+#include "parts.h"
 
 Engine::Engine(System *paramSys, const char *dataDir, const char *saveDir)
 	: _stub(paramSys), vm(&mixer, &_res, &player, &video, _stub), mixer(_stub), _res(&video, dataDir), 
@@ -69,7 +69,7 @@ void Engine::init() {
 	player.init();
 
 	//Init virtual machine
-	vm.initWithByteCodeAddress(VM_BYTECODE_STARTUP_ADDRESS); // demo starts at 0x3E81
+	vm.initForPart(GAME_PART_FIRST); // demo starts at 0x3E81
 
 }
 

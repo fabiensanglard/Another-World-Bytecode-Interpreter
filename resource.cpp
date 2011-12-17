@@ -22,7 +22,7 @@
 #include "serializer.h"
 #include "video.h"
 #include "util.h"
-
+#include "parts.h"
 
 Resource::Resource(Video *vid, const char *dataDir) 
 	: video(vid), _dataDir(dataDir) {
@@ -118,18 +118,19 @@ void Resource::readEntries() {
 void Resource::load() {
 
 	while (1) {
-		MemEntry *it = _memList;
+		
 		MemEntry *me = NULL;
 
 		// get resource with max rankNum
 		uint8 maxNum = 0;
 		uint16 i = _numMemList;
+		MemEntry *it = _memList;
 		while (i--) {
 			if (it->valid == 2 && maxNum <= it->rankNum) {
 				maxNum = it->rankNum;
 				me = it;
 			}
-			++it;
+			it++;
 		}
 		
 		if (me == NULL) {
@@ -141,7 +142,7 @@ void Resource::load() {
 		// "That's what she said"
 
 		uint8 *loadDestination = NULL;
-		if (me->type == ResType::RT_VIDBUF) {
+		if (me->type == RT_VIDBUF) {
 			loadDestination = _vidCurPtr;
 		} else {
 			loadDestination = _scriptCurPtr;
@@ -159,7 +160,7 @@ void Resource::load() {
 		} else {
 			debug(DBG_BANK, "Resource::load() bufPos=%X size=%X type=%X pos=%X bankId=%X", loadDestination - _memPtrStart, me->packedSize, me->type, me->bankOffset, me->bankId);
 			readBank(me, loadDestination);
-			if(me->type == ResType::RT_VIDBUF) {
+			if(me->type == RT_VIDBUF) {
 				video->copyPagePtr(_vidCurPtr);
 				me->valid = 0;
 			} else {
@@ -168,14 +169,17 @@ void Resource::load() {
 				_scriptCurPtr += me->size;
 			}
 		}
+
 	}
+
+
 }
 
 void Resource::invalidateRes() {
 	MemEntry *me = _memList;
 	uint16 i = _numMemList;
 	while (i--) {
-		if (me->type <= ResType::RT_VIDBUF || me->type > 6) {  // 6 WTF ?!?! ResType goes up to 5 !!
+		if (me->type <= RT_VIDBUF || me->type > 6) {  // 6 WTF ?!?! ResType goes up to 5 !!
 			me->valid = 0;
 		}
 		++me;
@@ -196,7 +200,7 @@ void Resource::invalidateAll() {
 void Resource::update(uint16 resourceId) {
 
 	if (resourceId > _numMemList) {
-		_newPtrsId = resourceId;
+		requestedNextPart = resourceId;
 	} else {
 		MemEntry *me = &_memList[resourceId];
 		if (me->valid == 0) {
@@ -207,49 +211,47 @@ void Resource::update(uint16 resourceId) {
 
 }
 
-void Resource::setupPtrs(uint16 ptrId) {
+void Resource::setupPart(uint16 partId) {
 
-	printf("setupPtrs %X\n",ptrId);
+	printf("setupPart %X\n",partId);
 
-	if (ptrId != _curPtrsId) {
+	if (partId == currentPartId)
+		return;
 
-		uint8 ipal = 0;
-		uint8 icod = 0;
-		uint8 ivd1 = 0;
-		uint8 ivd2 = 0;
+	if (partId < GAME_PART_FIRST || partId > GAME_PART_LAST)
+		error("Resource::setupPart() ec=0x%X invalid partId", partId);
 
-		if (ptrId >= 0x3E80 && ptrId <= 0x3E89) {
-			uint16 part = ptrId - 0x3E80;
-			ipal = _memListParts[part][0];
-			icod = _memListParts[part][1];
-			ivd1 = _memListParts[part][2];
-			ivd2 = _memListParts[part][3];
-		} else {
-			error("Resource::setupPtrs() ec=0x%X invalid ptrId", 0xF07);
-		}
+	uint16 memListPartIndex = partId - GAME_PART_FIRST;
 
-		invalidateAll();
+	uint8 palleteIndex = memListParts[memListPartIndex][MEMLIST_PART_PALETTE];
+	uint8 codeIndex    = memListParts[memListPartIndex][MEMLIST_PART_CODE];
+	uint8 video1Index  = memListParts[memListPartIndex][MEMLIST_PART_VIDEO1];
+	uint8 video2Index  = memListParts[memListPartIndex][MEMLIST_PART_VIDEO2];
 
-		_memList[ipal].valid = 2;
-		_memList[icod].valid = 2;
-		_memList[ivd1].valid = 2;
+	invalidateAll();
 
-		if (ivd2 != 0) {
-			_memList[ivd2].valid = 2;
-		}
+	_memList[palleteIndex].valid = 2;
+	_memList[codeIndex].valid = 2;
+	_memList[video1Index].valid = 2;
 
-		load();
+	if (video2Index != 0) 
+		_memList[video2Index].valid = 2;
+	
 
-		_segVideoPal = _memList[ipal].bufPtr;
-		_segCode = _memList[icod].bufPtr;
-		_segVideo1 = _memList[ivd1].bufPtr;
+	load();
 
-		if (ivd2 != 0) {
-			_segVideo2 = _memList[ivd2].bufPtr;
-		}
+	_segVideoPal = _memList[palleteIndex].bufPtr;
+	_segCode     = _memList[codeIndex].bufPtr;
+	_segVideo1   = _memList[video1Index].bufPtr;
 
-		_curPtrsId = ptrId;
-	}
+	if (video2Index != 0) 
+		_segVideo2 = _memList[video2Index].bufPtr;
+	
+
+	currentPartId = partId;
+	
+
+	// _scriptCurPtr is changed in this->load();
 	_scriptBakPtr = _scriptCurPtr;	
 }
 
@@ -292,7 +294,7 @@ void Resource::saveOrLoad(Serializer &ser) {
 
 	Serializer::Entry entries[] = {
 		SE_ARRAY(loadedList, 64, Serializer::SES_INT8, VER(1)),
-		SE_INT(&_curPtrsId, Serializer::SES_INT16, VER(1)),
+		SE_INT(&currentPartId, Serializer::SES_INT16, VER(1)),
 		SE_PTR(&_scriptBakPtr, VER(1)),
 		SE_PTR(&_scriptCurPtr, VER(1)),
 		SE_PTR(&_vidBakPtr, VER(1)),

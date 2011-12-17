@@ -70,13 +70,12 @@ struct Resource {
 		MEM_BLOCK_SIZE = 600 * 1024   //600kb total memory consumed (not taking into account stack and heap
 	};
 	
-	static const uint16 _memListParts[][4];
 	
 	Video *video;
 	const char *_dataDir;
 	MemEntry _memList[150];
 	uint16 _numMemList;
-	uint16 _curPtrsId, _newPtrsId;
+	uint16 currentPartId, requestedNextPart;
 	uint8 *_memPtrStart, *_scriptBakPtr, *_scriptCurPtr, *_vidBakPtr, *_vidCurPtr;
 	bool _useSegVideo2;
 
@@ -93,7 +92,7 @@ struct Resource {
 	void invalidateAll();
 	void invalidateRes();	
 	void update(uint16 num);
-	void setupPtrs(uint16 ptrId);
+	void setupPart(uint16 ptrId);
 	void allocMemBlock();
 	void freeMemBlock();
 	

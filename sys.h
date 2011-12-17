@@ -21,6 +21,10 @@
 
 #include "intern.h"
 
+
+#define NUM_COLORS 16
+#define BYTE_PER_PIXEL 3
+
 struct PlayerInput {
 	enum {
 		DIR_LEFT  = 1 << 0,

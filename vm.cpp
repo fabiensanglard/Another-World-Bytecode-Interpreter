@@ -24,6 +24,7 @@
 #include "serializer.h"
 #include "sfxplayer.h"
 #include "sys.h"
+#include "parts.h"
 
 //#define BYPASS_PROTECTION 1
 
@@ -63,7 +64,7 @@ void VirtualMachine::op_add() {
 }
 
 void VirtualMachine::op_addConst() {
-	if (_res->_curPtrsId == 0x3E86 && _scriptPtr.pc == _res->_segCode + 0x6D48) {
+	if (_res->currentPartId == 0x3E86 && _scriptPtr.pc == _res->_segCode + 0x6D48) {
 		warning("VirtualMachine::op_addConst() hack for non-stop looping gun sound bug");
 		// the script 0x27 slot 0x17 doesn't stop the gun sound from looping, I 
 		// don't really know why ; for now, let's play the 'stopping sound' like 
@@ -136,7 +137,7 @@ void VirtualMachine::op_jnz() {
 void VirtualMachine::op_condJmp() {
 
 #ifdef BYPASS_PROTECTION
-	if (_res->_curPtrsId == 0x3E80 && _scriptPtr.pc == _res->_segCode + 0xCB9) {
+	if (_res->currentPartId == VM_FIRST_PART && _scriptPtr.pc == _res->_segCode + 0xCB9) {
 		// (0x0CB8) condJmp(0x80, VAR(41), VAR(30), 0xCD3)
 		*(_scriptPtr.pc + 0x00) = 0x81;
 		*(_scriptPtr.pc + 0x03) = 0x0D;
@@ -268,7 +269,7 @@ void VirtualMachine::op_blitFramebuffer() {
 	inp_handleSpecialKeys();
 
 	//Nasty hack....was this present in the original assembly  ??!!
-	if (_res->_curPtrsId == 0x3E80 && vmVariables[0x67] == 1) 
+	if (_res->currentPartId == GAME_PART_FIRST && vmVariables[0x67] == 1) 
 		vmVariables[0xDC] = 0x21;
 	
 	if (!_fastMode) {
@@ -379,14 +380,14 @@ void VirtualMachine::op_playMusic() {
 	snd_playMusic(resNum, delay, pos);
 }
 
-void VirtualMachine::initWithByteCodeAddress(uint16 ptrId) {
+void VirtualMachine::initForPart(uint16 partId) {
 
 	player->stop();
 	mixer->stopAll();
 
 	vmVariables[0xE4] = 0x14;
 
-	_res->setupPtrs(ptrId);
+	_res->setupPart(partId);
 
 	memset((uint8 *)_scriptSlotsPos, 0xFF, sizeof(_scriptSlotsPos));
 	memset((uint8 *)vmChannelPaused, 0, sizeof(vmChannelPaused));
@@ -399,10 +400,10 @@ void VirtualMachine::initWithByteCodeAddress(uint16 ptrId) {
 */
 void VirtualMachine::setupScripts() {
 
-
-	if (_res->_newPtrsId != 0) {
-		initWithByteCodeAddress(_res->_newPtrsId);
-		_res->_newPtrsId = 0;
+	//Check if a part switch has been requested.
+	if (_res->requestedNextPart != 0) {
+		initForPart(_res->requestedNextPart);
+		_res->requestedNextPart = 0;
 	}
 
 	
@@ -568,7 +569,7 @@ void VirtualMachine::inp_updatePlayer() {
 
 	_stub->processEvents();
 
-	if (_res->_curPtrsId == 0x3E89) {
+	if (_res->currentPartId == 0x3E89) {
 		char c = _stub->input.lastChar;
 		if (c == 8 | /*c == 0xD |*/ c == 0 | (c >= 'a' && c <= 'z')) {
 			vmVariables[VM_VARIABLE_LAST_KEYCHAR] = c & ~0x20;
@@ -622,7 +623,7 @@ void VirtualMachine::inp_handleSpecialKeys() {
 
 	if (_stub->input.pause) {
 
-		if (_res->_curPtrsId != 0x3E80 && _res->_curPtrsId != 0x3E81) {
+		if (_res->currentPartId != GAME_PART1 && _res->currentPartId != GAME_PART2) {
 			_stub->input.pause = false;
 			while (!_stub->input.pause) {
 				_stub->processEvents();
@@ -634,8 +635,8 @@ void VirtualMachine::inp_handleSpecialKeys() {
 
 	if (_stub->input.code) {
 		_stub->input.code = false;
-		if (_res->_curPtrsId != 0x3E89 && _res->_curPtrsId != VM_BYTECODE_STARTUP_ADDRESS) {
-			_res->_newPtrsId = 0x3E89;
+		if (_res->currentPartId != GAME_PART_LAST && _res->currentPartId != GAME_PART_FIRST) {
+			_res->requestedNextPart = GAME_PART_LAST;
 		}
 	}
 

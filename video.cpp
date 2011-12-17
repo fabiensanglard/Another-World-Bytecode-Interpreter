@@ -45,6 +45,7 @@ void Video::init() {
 	for (int i = 0; i < 4; ++i) {
 		_pagePtrs[i] = allocPage();
 	}
+
 	_curPagePtr3 = getPagePtr(1);
 	_curPagePtr2 = getPagePtr(2);
 
@@ -482,15 +483,17 @@ uint8 *Video::allocPage() {
 	return buf;
 }
 
+
 void Video::changePal(uint8 palNum) {
 
 	if (palNum >= 32)
 		return;
 	
-
 	uint8 *p = _res->_segVideoPal + palNum * 32;
-	uint8 pal[16 * 3];
-	for (int i = 0; i < 16; ++i) {
+	uint8 pal[NUM_COLORS * 3]; //3 = BYTES_PER_PIXEL
+
+	for (int i = 0; i < NUM_COLORS; ++i) 
+	{
 		uint8 c1 = *(p + 0);
 		uint8 c2 = *(p + 1);
 		p += 2;
@@ -499,14 +502,16 @@ void Video::changePal(uint8 palNum) {
 		pal[i * 3 + 2] = ((c2 & 0x0F) >> 2) | ((c2 & 0x0F) << 2); // b
 	}
 
-	_stub->setPalette(0, 16, pal);
+	_stub->setPalette(0, NUM_COLORS, pal);
 	currentPaletteId = palNum;
 	
 
 }
 
 void Video::updateDisplay(uint8 pageId) {
+
 	debug(DBG_VIDEO, "Video::updateDisplay(%d)", pageId);
+
 	if (pageId != 0xFE) {
 		if (pageId == 0xFF) {
 			SWAP(_curPagePtr2, _curPagePtr3);
@@ -521,6 +526,9 @@ void Video::updateDisplay(uint8 pageId) {
 		paletteIdRequested = NO_PALETTE_CHANGE_REQUESTED;
 	}
 
+	//Q: Why 160 ?
+	//A: Because one byte gives two palette indices so
+	//   we only need to move 320/2 per line.
 	_stub->copyRect(0, 0, 320, 200, _curPagePtr2, 160);
 }
 
