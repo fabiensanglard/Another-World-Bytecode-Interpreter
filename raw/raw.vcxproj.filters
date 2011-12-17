@@ -39,12 +39,6 @@
     <ClInclude Include="..\sfxplayer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\sys.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\systemstub.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -52,6 +46,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\vm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sys.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\systemstub.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

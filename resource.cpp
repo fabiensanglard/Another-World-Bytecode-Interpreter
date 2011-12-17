@@ -194,6 +194,7 @@ void Resource::invalidateAll() {
 }
 
 void Resource::update(uint16 resourceId) {
+
 	if (resourceId > _numMemList) {
 		_newPtrsId = resourceId;
 	} else {
@@ -203,6 +204,7 @@ void Resource::update(uint16 resourceId) {
 			load();
 		}
 	}
+
 }
 
 void Resource::setupPtrs(uint16 ptrId) {
@@ -233,13 +235,17 @@ void Resource::setupPtrs(uint16 ptrId) {
 		if (ivd2 != 0) {
 			_memList[ivd2].valid = 2;
 		}
+
 		load();
+
 		_segVideoPal = _memList[ipal].bufPtr;
 		_segCode = _memList[icod].bufPtr;
 		_segVideo1 = _memList[ivd1].bufPtr;
+
 		if (ivd2 != 0) {
 			_segVideo2 = _memList[ivd2].bufPtr;
 		}
+
 		_curPtrsId = ptrId;
 	}
 	_scriptBakPtr = _scriptCurPtr;	
