@@ -23,10 +23,10 @@
 #include "video.h"
 #include "serializer.h"
 #include "sfxplayer.h"
-#include "systemstub.h"
+#include "sys.h"
 
 
-VirtualMachine::VirtualMachine(Mixer *mix, Resource *res, SfxPlayer *ply, Video *vid, SystemStub *stub)
+VirtualMachine::VirtualMachine(Mixer *mix, Resource *res, SfxPlayer *ply, Video *vid, System *stub)
 	: mixer(mix), _res(res), player(ply), video(vid), _stub(stub) {
 }
 

@@ -71,6 +71,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeaderFile>intern.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -91,8 +92,8 @@
     <ClInclude Include="..\resource.h" />
     <ClInclude Include="..\serializer.h" />
     <ClInclude Include="..\sfxplayer.h" />
-    <ClInclude Include="..\systemstub.h" />
     <ClInclude Include="..\sys.h" />
+    <ClInclude Include="..\endian.h" />
     <ClInclude Include="..\util.h" />
     <ClInclude Include="..\video.h" />
   </ItemGroup>
@@ -104,7 +105,7 @@
     <ClCompile Include="..\main.cpp" />
     <ClCompile Include="..\mixer.cpp" />
     <ClCompile Include="..\resource.cpp" />
-    <ClCompile Include="..\sdlstub.cpp" />
+    <ClCompile Include="..\sys.cpp" />
     <ClCompile Include="..\serializer.cpp" />
     <ClCompile Include="..\sfxplayer.cpp" />
     <ClCompile Include="..\staticres.cpp" />

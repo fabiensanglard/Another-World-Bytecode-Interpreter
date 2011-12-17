@@ -19,10 +19,10 @@
 #include "engine.h"
 #include "file.h"
 #include "serializer.h"
-#include "systemstub.h"
+#include "sys.h"
 
 
-Engine::Engine(SystemStub *stub, const char *dataDir, const char *saveDir)
+Engine::Engine(System *stub, const char *dataDir, const char *saveDir)
 	: _stub(stub), vm(&mixer, &_res, &player, &video, _stub), mixer(_stub), _res(&video, dataDir), 
 	player(&mixer, &_res, _stub), video(&_res, stub), _dataDir(dataDir), _saveDir(saveDir), _stateSlot(0) {
 }

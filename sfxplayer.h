@@ -50,12 +50,12 @@ struct SfxPattern {
 struct Mixer;
 struct Resource;
 struct Serializer;
-struct SystemStub;
+struct System;
 
 struct SfxPlayer {
 	Mixer *mixer;
 	Resource *_res;
-	SystemStub *_stub;
+	System *_stub;
 
 	void *_mutex;
 	void *_timerId;
@@ -64,7 +64,7 @@ struct SfxPlayer {
 	SfxModule _sfxMod;
 	int16 *_markVar;
 
-	SfxPlayer(Mixer *mix, Resource *res, SystemStub *stub);
+	SfxPlayer(Mixer *mix, Resource *res, System *stub);
 	void init();
 	void free();
 

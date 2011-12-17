@@ -26,14 +26,14 @@
 #include "resource.h"
 #include "video.h"
 
-struct SystemStub;
+struct System;
 
 struct Engine {
 	enum {
 		MAX_SAVE_SLOTS = 100
 	};
 
-	SystemStub *_stub;
+	System *_stub;
 	VirtualMachine vm;
 	Mixer mixer;
 	Resource _res;
@@ -42,7 +42,7 @@ struct Engine {
 	const char *_dataDir, *_saveDir;
 	uint8 _stateSlot;
 
-	Engine(SystemStub *stub, const char *dataDir, const char *saveDir);
+	Engine(System *stub, const char *dataDir, const char *saveDir);
 
 	void run();
 	void setup();

@@ -24,7 +24,7 @@
 #include <cstdlib>
 #include <cassert>
 
-#include "sys.h"
+#include "endian.h"
 #include "util.h"
 
 #define MAX(x,y) ((x)>(y)?(x):(y))

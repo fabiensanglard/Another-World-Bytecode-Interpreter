@@ -48,10 +48,10 @@
     <ClInclude Include="..\vm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\sys.h">
+    <ClInclude Include="..\endian.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\systemstub.h">
+    <ClInclude Include="..\sys.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -74,9 +74,6 @@
     <ClCompile Include="..\resource.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\sdlstub.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\serializer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -93,6 +90,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\vm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sys.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

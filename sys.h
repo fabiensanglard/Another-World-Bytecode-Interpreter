@@ -16,47 +16,82 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef __SYS_H__
-#define __SYS_H__
+#ifndef __System_H__
+#define __System_H__
 
-typedef unsigned char uint8;
-typedef signed char int8;
-typedef unsigned short uint16;
-typedef signed short int16;
-typedef unsigned long uint32;
-typedef signed long int32;
+#include "intern.h"
 
-//FCS added for windows build
-#ifdef _WIN32
-	#define SYS_LITTLE_ENDIAN
-#endif
+struct PlayerInput {
+	enum {
+		DIR_LEFT  = 1 << 0,
+		DIR_RIGHT = 1 << 1,
+		DIR_UP    = 1 << 2,
+		DIR_DOWN  = 1 << 3
+	};
 
-#if defined SYS_LITTLE_ENDIAN
+	uint8 dirMask;
+	bool button;
+	bool code;
+	bool pause;
+	bool quit;
+	char lastChar;
+	bool save, load;
+	bool fastMode;
+	int8 stateSlot;
+};
 
-inline uint16 READ_BE_UINT16(const void *ptr) {
-	const uint8 *b = (const uint8 *)ptr;
-	return (b[0] << 8) | b[1];
-}
+/*
+	System is an abstract class so any find of system can be plugged underneath.
+*/
+struct System {
+	typedef void (*AudioCallback)(void *param, uint8 *stream, int len);
+	typedef uint32 (*TimerCallback)(uint32 delay, void *param);
+	
+	PlayerInput _pi;
 
-inline uint32 READ_BE_UINT32(const void *ptr) {
-	const uint8 *b = (const uint8 *)ptr;
-	return (b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
-}
+	virtual ~System() {}
 
-#elif defined SYS_BIG_ENDIAN
+	virtual void init(const char *title) = 0;
+	virtual void destroy() = 0;
 
-inline uint16 READ_BE_UINT16(const void *ptr) {
-	return *(const uint16 *)ptr;
-}
+	virtual void setPalette(uint8 s, uint8 n, const uint8 *buf) = 0;
+	virtual void copyRect(uint16 x, uint16 y, uint16 w, uint16 h, const uint8 *buf, uint32 pitch) = 0;
 
-inline uint32 READ_BE_UINT32(const void *ptr) {
-	return *(const uint32 *)ptr;
-}
+	virtual void processEvents() = 0;
+	virtual void sleep(uint32 duration) = 0;
+	virtual uint32 getTimeStamp() = 0;
 
-#else
+	virtual void startAudio(AudioCallback callback, void *param) = 0;
+	virtual void stopAudio() = 0;
+	virtual uint32 getOutputSampleRate() = 0;
+	
+	virtual void *addTimer(uint32 delay, TimerCallback callback, void *param) = 0;
+	virtual void removeTimer(void *timerId) = 0;
 
-#error No endianness defined
+	virtual void *createMutex() = 0;
+	virtual void destroyMutex(void *mutex) = 0;
+	virtual void lockMutex(void *mutex) = 0;
+	virtual void unlockMutex(void *mutex) = 0;
+};
 
-#endif
+struct MutexStack {
+	System *_stub;
+	void *_mutex;
+
+	MutexStack(System *stub, void *mutex) 
+		: _stub(stub), _mutex(mutex) {
+		_stub->lockMutex(_mutex);
+	}
+	~MutexStack() {
+		_stub->unlockMutex(_mutex);
+	}
+};
+
+/*
+	We use here a design pattern found in Doom3:
+	An Abstract Class pointer
+*/
+//extern System *System_SDL_create();
+extern System *stub ;//= System_SDL_create();
 
 #endif

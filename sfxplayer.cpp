@@ -20,10 +20,10 @@
 #include "mixer.h"
 #include "resource.h"
 #include "serializer.h"
-#include "systemstub.h"
+#include "sys.h"
 
 
-SfxPlayer::SfxPlayer(Mixer *mix, Resource *res, SystemStub *stub)
+SfxPlayer::SfxPlayer(Mixer *mix, Resource *res, System *stub)
 	: mixer(mix), _res(res), _stub(stub), _delay(0), _resNum(0) {
 }
 

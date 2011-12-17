@@ -50,7 +50,7 @@ struct Mixer;
 struct Resource;
 struct Serializer;
 struct SfxPlayer;
-struct SystemStub;
+struct System;
 struct Video;
 
 struct VirtualMachine {
@@ -66,7 +66,7 @@ struct VirtualMachine {
 	Resource *_res;
 	SfxPlayer *player;
 	Video *video;
-	SystemStub *_stub;
+	System *_stub;
 
 
 
@@ -96,7 +96,7 @@ struct VirtualMachine {
 	bool _scriptHalted;
 	bool _fastMode;
 
-	VirtualMachine(Mixer *mix, Resource *res, SfxPlayer *ply, Video *vid, SystemStub *stub);
+	VirtualMachine(Mixer *mix, Resource *res, SfxPlayer *ply, Video *vid, System *stub);
 	void init();
 	
 	void op_movConst();

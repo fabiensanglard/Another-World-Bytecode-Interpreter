@@ -40,7 +40,7 @@ struct Polygon {
 
 struct Resource;
 struct Serializer;
-struct SystemStub;
+struct System;
 
 // This is used to detect the end of  _stringsTableEng and _stringsTableDemo
 #define END_OF_STRING_DICTIONARY 0xFFFF 
@@ -60,7 +60,7 @@ struct Video {
 	static const StrEntry _stringsTableDemo[];
 
 	Resource *_res;
-	SystemStub *_stub;
+	System *_stub;
 	
 
 
@@ -78,7 +78,7 @@ struct Video {
 	Ptr _pData;
 	uint8 *_dataBuf;
 
-	Video(Resource *res, SystemStub *stub);
+	Video(Resource *res, System *stub);
 	void init();
 
 	void setDataBuffer(uint8 *dataBuf, uint16 offset);

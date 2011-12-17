@@ -18,7 +18,7 @@
 
 #include "mixer.h"
 #include "serializer.h"
-#include "systemstub.h"
+#include "sys.h"
 
 
 static int8 addclamp(int a, int b) {
@@ -32,7 +32,7 @@ static int8 addclamp(int a, int b) {
 	return (int8)add;
 }
 
-Mixer::Mixer(SystemStub *stub) 
+Mixer::Mixer(System *stub) 
 	: _stub(stub) {
 }
 

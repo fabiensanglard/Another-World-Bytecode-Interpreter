@@ -19,7 +19,7 @@
 #include "video.h"
 #include "resource.h"
 #include "serializer.h"
-#include "systemstub.h"
+#include "sys.h"
 
 
 void Polygon::init(const uint8 *p, uint16 zoom) {
@@ -34,7 +34,7 @@ void Polygon::init(const uint8 *p, uint16 zoom) {
 	}
 }
 
-Video::Video(Resource *res, SystemStub *stub) 
+Video::Video(Resource *res, System *stub) 
 	: _res(res), _stub(stub) {
 }
 
