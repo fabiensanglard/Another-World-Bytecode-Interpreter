@@ -375,7 +375,7 @@ void VirtualMachine::op_updateMemList() {
 		mixer->stopAll();
 		res->invalidateRes();
 	} else {
-		res->update(resourceId);
+		res->loadPartsOrMemoryEntry(resourceId);
 	}
 }
 
@@ -516,10 +516,12 @@ void VirtualMachine::executeThread() {
 			int16 x, y;
 			uint16 off = _scriptPtr.fetchWord() * 2;
 			x = _scriptPtr.fetchByte();
+
 			res->_useSegVideo2 = false;
+
 			if (!(opcode & 0x20)) 
 			{
-				if (!(opcode & 0x10)) 
+				if (!(opcode & 0x10))  // 0001 0000 is set
 				{
 					x = (x << 8) | _scriptPtr.fetchByte();
 				} else {
@@ -528,16 +530,16 @@ void VirtualMachine::executeThread() {
 			} 
 			else 
 			{
-				if (opcode & 0x10) {
+				if (opcode & 0x10) { // 0001 0000 is set
 					x += 0x100;
 				}
 			}
 
 			y = _scriptPtr.fetchByte();
 
-			if (!(opcode & 8)) 
+			if (!(opcode & 8))  // 0000 1000 is set
 			{
-				if (!(opcode & 4)) {
+				if (!(opcode & 4)) { // 0000 0100 is set
 					y = (y << 8) | _scriptPtr.fetchByte();
 				} else {
 					y = vmVariables[y];
@@ -546,9 +548,9 @@ void VirtualMachine::executeThread() {
 
 			uint16 zoom = _scriptPtr.fetchByte();
 
-			if (!(opcode & 2)) 
+			if (!(opcode & 2))  // 0000 0010 is set
 			{
-				if (!(opcode & 1)) 
+				if (!(opcode & 1)) // 0000 0001 is set
 				{
 					--_scriptPtr.pc;
 					zoom = 0x40;
@@ -560,7 +562,8 @@ void VirtualMachine::executeThread() {
 			} 
 			else 
 			{
-				if (opcode & 1) {
+				
+				if (opcode & 1) { // 0000 0001 is set
 					res->_useSegVideo2 = true;
 					--_scriptPtr.pc;
 					zoom = 0x40;
@@ -674,7 +677,7 @@ void VirtualMachine::snd_playSound(uint16 resNum, uint8 freq, uint8 vol, uint8 c
 	
 	MemEntry *me = &res->_memList[resNum];
 
-	if (me->valid != 1)
+	if (me->state != 1)
 		return;
 
 	

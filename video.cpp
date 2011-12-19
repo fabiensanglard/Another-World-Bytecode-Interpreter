@@ -61,19 +61,19 @@ void Video::init() {
 }
 
 void Video::setDataBuffer(uint8 *dataBuf, uint16 offset) {
+
 	_dataBuf = dataBuf;
 	_pData.pc = dataBuf + offset;
+
 }
 
-/*
-     A shape can be given in two different ways:
+
+/*  A shape can be given in two different ways:
 
 	 - A list of screenspace vertices.
 	 - A list of objectspace vertices, based on a delta from the first vertex.
 
-	 This is a recursive function. 
-*/
-
+	 This is a recursive function. */
 void Video::readAndDrawPolygon(uint8 color, uint16 zoom, const Point &pt) {
 
 	uint8 i = _pData.fetchByte();
@@ -90,10 +90,10 @@ void Video::readAndDrawPolygon(uint8 color, uint16 zoom, const Point &pt) {
 		polygon.readVertices(_pData.pc, zoom);
 
 		fillPolygon(color, zoom, pt);
-
 #if TRACE_FRAMEBUFFER
-			dumpFrameBuffers();
+			//dumpFrameBuffers();
 #endif
+
 
 	} else {
 		i &= 0x3F;  //0x3F = 63
@@ -101,10 +101,18 @@ void Video::readAndDrawPolygon(uint8 color, uint16 zoom, const Point &pt) {
 			warning("Video::readAndDrawPolygon() ec=0x%X (i != 2)", 0xF80);
 		} else if (i == 2) {
 			readAndDrawPolygonHierarchy(zoom, pt);
+#if TRACE_FRAMEBUFFER
+		//	dumpFrameBuffers();
+#endif
 		} else {
 			warning("Video::readAndDrawPolygon() ec=0x%X (i != 2)", 0xFBB);
 		}
 	}
+
+#if TRACE_FRAMEBUFFER
+		//	dumpFrameBuffers();
+#endif
+
 }
 
 void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
@@ -149,7 +157,8 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
 	while (1) {
 		polygon.numPoints -= 2;
 		if (polygon.numPoints == 0) {
-			return;
+
+			break;
 		}
 		uint16 h;
 		int32 step1 = calcStep(polygon.points[j + 1], polygon.points[j], h);
@@ -178,7 +187,7 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
 				cpt1 += step1;
 				cpt2 += step2;
 				++_hliney;					
-				if (_hliney > 199) return;
+				if (_hliney > 199) break;
 			}
 		}
 	}
@@ -222,12 +231,11 @@ void Video::readAndDrawPolygonHierarchy(uint16 zoom, const Point &pgc) {
 		
 		readAndDrawPolygon(color, zoom, po);
 
-		//FCS: Debug so I can see a hierarchy being draw step by step.
-		#if TRACE_FRAMEBUFFER
-			dumpFrameBuffers();
-		#endif
+
 		_pData.pc = bak;
 	}
+
+
 }
 
 int32 Video::calcStep(const Point &p1, const Point &p2, uint16 &dy) {
@@ -265,7 +273,9 @@ void Video::drawString(uint8 color, uint16 x, uint16 y, uint16 stringId) {
 		x++;
 		
 	}
-
+#if TRACE_FRAMEBUFFER
+//			dumpFrameBuffers();
+#endif
 }
 
 void Video::drawChar(uint8 character, uint16 x, uint16 y, uint8 color, uint8 *buf) {
@@ -445,10 +455,14 @@ uint8 *Video::getPagePtr(uint8 page) {
 	return p;
 }
 
+
+
 void Video::changePagePtr1(uint8 page) {
 	debug(DBG_VIDEO, "Video::changePagePtr1(%d)", page);
 	_curPagePtr1 = getPagePtr(page);
 }
+
+
 
 void Video::fillPage(uint8 pageId, uint8 color) {
 	debug(DBG_VIDEO, "Video::fillPage(%d, %d)", pageId, color);
@@ -460,6 +474,10 @@ void Video::fillPage(uint8 pageId, uint8 color) {
 
 
 	memset(p, c, VID_PAGE_SIZE);
+
+#if TRACE_FRAMEBUFFER
+			//dumpFrameBuffers();
+#endif
 }
 
 // This is the opcode to blitz backbuffer to front buffer.
@@ -491,6 +509,11 @@ void Video::copyPage(uint8 srcPageId, uint8 dstPageId, int16 vscroll) {
 			memcpy(q, p, h * 160);
 		}
 	}
+
+
+#if TRACE_FRAMEBUFFER
+	//		dumpFrameBuffers();
+#endif
 }
 
 void Video::copyPagePtr(const uint8 *src) {
@@ -518,6 +541,10 @@ void Video::copyPagePtr(const uint8 *src) {
 			++src;
 		}
 	}
+
+#if TRACE_FRAMEBUFFER
+		//	dumpFrameBuffers();
+#endif
 }
 
 uint8 *Video::allocPage() {
@@ -555,8 +582,6 @@ void Video::changePal(uint8 palNum) {
 
 	sys->setPalette(0, NUM_COLORS, pal);
 	currentPaletteId = palNum;
-	
-
 }
 
 void Video::updateDisplay(uint8 pageId) {
@@ -581,6 +606,10 @@ void Video::updateDisplay(uint8 pageId) {
 	//A: Because one byte gives two palette indices so
 	//   we only need to move 320/2 per line.
 	sys->copyRect(0, 0, 320, 200, _curPagePtr2, 160);
+
+		#if TRACE_FRAMEBUFFER
+	//		dumpFrameBuffers();
+#endif
 }
 
 void Video::saveOrLoad(Serializer &ser) {
@@ -618,37 +647,148 @@ void Video::saveOrLoad(Serializer &ser) {
 
 
 #if TRACE_FRAMEBUFFER
-int traceFrameBufferCounter=0;
-uint8 allFrameBuffers[640*400*3];
 
-void writeLine(uint8 *src,uint8 *dst,int size)
+
+
+
+#include "png.h"
+int GL_FCS_SaveAsSpecifiedPNG(char* path, uint8* pixels, int depth=8, int format=PNG_COLOR_TYPE_RGB)
+{
+	FILE * fp;
+	png_structp png_ptr = NULL;
+    png_infop info_ptr = NULL;
+    png_byte ** row_pointers = NULL;
+	int status = -1;
+	int bytePerPixel=0;
+    int y;
+
+    fp = fopen (path, "wb");
+    if (! fp) {
+        goto fopen_failed;
+    }
+
+	png_ptr = png_create_write_struct (PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    if (png_ptr == NULL) {
+        goto png_create_write_struct_failed;
+    }
+    
+    info_ptr = png_create_info_struct (png_ptr);
+    if (info_ptr == NULL) {
+        goto png_create_info_struct_failed;
+    }
+
+	if (setjmp (png_jmpbuf (png_ptr))) {
+        goto png_failure;
+    }
+    
+    /* Set image attributes. */
+
+    png_set_IHDR (png_ptr,
+                  info_ptr,
+                  640,
+                  400,
+                  depth,
+                  format,
+                  PNG_INTERLACE_NONE,
+                  PNG_COMPRESSION_TYPE_DEFAULT,
+                  PNG_FILTER_TYPE_DEFAULT);
+
+	if (format == PNG_COLOR_TYPE_GRAY	)
+		bytePerPixel = depth/8 * 1;
+	else
+		bytePerPixel = depth/8 * 3;
+
+	row_pointers = (png_byte **)png_malloc (png_ptr, 400 * sizeof (png_byte *));
+	//for (y = vid.height-1; y >=0; --y) 
+	for (y = 0; y < 400; y++) 
+    {
+		row_pointers[y] = (png_byte*)&pixels[640*(400-y)*bytePerPixel];
+	}
+
+	png_init_io (png_ptr, fp);
+    png_set_rows (png_ptr, info_ptr, row_pointers);
+    png_write_png (png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+	//png_read_image (png_ptr, info_ptr);//
+
+	status = 0;
+    
+    png_free (png_ptr, row_pointers);
+    
+
+	png_failure:   
+    png_create_info_struct_failed:
+			png_destroy_write_struct (&png_ptr, &info_ptr); 
+
+    png_create_write_struct_failed:
+		fclose (fp);
+	fopen_failed:
+		return status;
+}
+
+
+
+
+
+
+#define SCREENSHOT_BPP 3
+int traceFrameBufferCounter=0;
+uint8 allFrameBuffers[640*400*SCREENSHOT_BPP];
+uint8 *fb1,*fb2,*fb3;
+/*
+uint8 dumpPalette[48] = {
+ 0x14, 0x14, 0x14,
+ 0xAA, 0x0, 0x0,
+ 0x14, 0x28, 0x55,
+ 0x14, 0x3C, 0x55,
+ 0x28, 0x55, 0x7D,
+ 0x3C, 0x55, 0x7D,
+ 0x55, 0x7D, 0xBE,
+ 0x7D, 0xAA, 0xBE,
+ 0xBE, 0xAA, 0x0,
+ 0xFF, 0x0, 0x0,
+ 0xFF, 0xBE, 0x0,
+ 0xFF, 0xAA, 0x0,
+ 0xFF, 0xFF, 0x0,
+ 0xFF, 0xFF, 0x0,
+ 0xFF, 0xFF, 0x7D,
+ 0xFF, 0xFF, 0xAA,
+
+};
+*/
+void writeLine(uint8 *dst,uint8 *src,int size)
 {
 	for( uint8 twoPixels = 0 ; twoPixels < size ; twoPixels++)
 	{
-		int pixelIndex0 = (src[size] & 0xF0) >> 4;
-		int pixelIndex1 = (src[size] & 0xF);
+		int pixelIndex0 = (*src & 0xF0) >> 4;
+		pixelIndex0 &= 0x10 -1;
+
+		int pixelIndex1 = (*src & 0xF);
+		pixelIndex1 &= 0x10 -1;
 
 		//We need to write those two pixels
-		dst[0] = pal[pixelIndex0*3];
-		dst[1] = pal[pixelIndex0*3+1];
-		dst[2] = pal[pixelIndex0*3+2];
-		dst+=3;
+		dst[0] = pal[pixelIndex0*3] << 2 | pal[pixelIndex0*3];
+		dst[1] = pal[pixelIndex0*3+1] << 2 | pal[pixelIndex0*3+1];
+		dst[2] = pal[pixelIndex0*3+2] << 2 | pal[pixelIndex0*3+2];
+		//dst[3] = 0xFF;
+		dst+=SCREENSHOT_BPP;
 
-		dst[0] = pal[pixelIndex1*3];
-		dst[1] = pal[pixelIndex1*3+1];
-		dst[2] = pal[pixelIndex1*3+2];
-		dst+=3;
+		dst[0] = pal[pixelIndex1*3] << 2 | pal[pixelIndex1*3];
+		dst[1] = pal[pixelIndex1*3+1] << 2 | pal[pixelIndex1*3+1];
+		dst[2] = pal[pixelIndex1*3+2] << 2 | pal[pixelIndex1*3+2];
+		//dst[3] = 0xFF;
+		dst+=SCREENSHOT_BPP;
 
+		src++;
 	}
 }
 
 void dumpFrameBuffer(uint8 *src,uint8 *dst, int x,int y)
 {
 
-	for (int line=0 ; line < 200 ; line++)
+	for (int line=199 ; line >= 0 ; line--)
 	{
-		writeLine(dst + x + y*320  ,src+line*160,160);
-		dst+= 320;
+		writeLine(dst + x*SCREENSHOT_BPP + y*640*SCREENSHOT_BPP  ,src+line*160,160);
+		dst+= 640*SCREENSHOT_BPP;
 	}
 }
 
@@ -656,26 +796,66 @@ void Video::dumpFrameBuffers()
 {
 	
 	if (!traceFrameBufferCounter)
+	{
 		memset(allFrameBuffers,0,sizeof(allFrameBuffers));
+		fb1 = _curPagePtr1;
+		fb2 = _curPagePtr2;
+		fb3 = _curPagePtr3;
+	}
+
+	//if (_curPagePtr1 == _pagePtrs[0])
+	dumpFrameBuffer(fb1,allFrameBuffers,0,0);
+
+	//if (_curPagePtr1 == _pagePtrs[1])
+	dumpFrameBuffer(fb2,allFrameBuffers,0,200);
+
+	//if (_curPagePtr1 == _pagePtrs[2])
+	dumpFrameBuffer(fb3,allFrameBuffers,320,0);
+
+	//if (_curPagePtr1 == _pagePtrs[3])
+	//dumpFrameBuffer(sys,allFrameBuffers,320,200);
+	/*
+	uint8* offScreen = sys->getOffScreenFramebuffer();
+	for(int i=0 ; i < 200 ; i++)
+		memcpy(allFrameBuffers+320+640*i,offScreen+400*i,320);
+    */
 
 	int frameId = traceFrameBufferCounter++;
-
-	int x_offset;
-	int y_offset;
-    
-	x_offset=0;
-	y_offset=0;
-	dumpFrameBuffer(_curPagePtr1,allFrameBuffers,x_offset,y_offset);
-
-	x_offset=320;
-	y_offset=0;
-	dumpFrameBuffer(_curPagePtr2,allFrameBuffers,x_offset,y_offset);
-
-	x_offset=0;
-	y_offset=200;
-	dumpFrameBuffer(_curPagePtr3,allFrameBuffers,x_offset,y_offset);
-
 	//Write bitmap to disk.
+
+	
+
+	// Filling TGA header information
+	/*
+	char path[256];
+	sprintf(path,"test%d.tga",traceFrameBufferCounter);
+
+#define IMAGE_WIDTH 640
+#define IMAGE_HEIGHT 400
+
+    uint8 tga_header[18];
+    memset(tga_header, 0, 18);
+    tga_header[2] = 2;
+    tga_header[12] = (IMAGE_WIDTH & 0x00FF);
+    tga_header[13] = (IMAGE_WIDTH  & 0xFF00) / 256;
+    tga_header[14] = (IMAGE_HEIGHT  & 0x00FF) ;
+    tga_header[15] =(IMAGE_HEIGHT & 0xFF00) / 256;
+    tga_header[16] = 32 ;
+
+
+	
+    // Open the file, write both header and payload, close, done.
+	char path[256];
+	sprintf(path,"test%d.tga",traceFrameBufferCounter);
+    FILE* pScreenshot = fopen(path, "wb");
+    fwrite(&tga_header, 18, sizeof(uint8), pScreenshot);
+    fwrite(allFrameBuffers, IMAGE_WIDTH * IMAGE_HEIGHT,SCREENSHOT_BPP * sizeof(uint8),pScreenshot);
+    fclose(pScreenshot);
+	*/
+
+	char path[256];
+	sprintf(path,"test%d.png",traceFrameBufferCounter);
+	GL_FCS_SaveAsSpecifiedPNG(path,allFrameBuffers);
 }
 
 

@@ -75,7 +75,7 @@ void Resource::readEntries() {
 	MemEntry *memEntry = _memList;
 	while (1) {
 		assert(_numMemList < ARRAYSIZE(_memList));
-		memEntry->valid = f.readByte();
+		memEntry->state = f.readByte();
 		memEntry->type = f.readByte();
 		memEntry->bufPtr = 0; f.readUint16BE();
 		memEntry->unk4 = f.readUint16BE();
@@ -94,7 +94,7 @@ void Resource::readEntries() {
 		resourceUnitStats[memEntry->type]++;
         resourceUnitStats[STATS_TOTAL_SIZE]++;
 
-		if (memEntry->valid == 0xFF) {
+		if (memEntry->state == MEMENTRY_STATE_END_OF_MEMLIST) {
 			break;
 		}
 
@@ -115,6 +115,10 @@ void Resource::readEntries() {
 
 }
 
+/*
+	Go over every resource and check if they are marked at "MEMENTRY_STATE_LOAD_ME".
+	Load them in memory and mark them are MEMENTRY_STATE_LOADED
+*/
 void Resource::load() {
 
 	while (1) {
@@ -126,7 +130,7 @@ void Resource::load() {
 		uint16 i = _numMemList;
 		MemEntry *it = _memList;
 		while (i--) {
-			if (it->valid == 2 && maxNum <= it->rankNum) {
+			if (it->state == MEMENTRY_STATE_LOAD_ME && maxNum <= it->rankNum) {
 				maxNum = it->rankNum;
 				me = it;
 			}
@@ -138,7 +142,7 @@ void Resource::load() {
 		}
 
 		
-		// At this point the resource descriptor should be in "me"
+		// At this point the resource descriptor should be pointed to "me"
 		// "That's what she said"
 
 		uint8 *loadDestination = NULL;
@@ -148,7 +152,7 @@ void Resource::load() {
 			loadDestination = _scriptCurPtr;
 			if (me->size > _vidBakPtr - _scriptCurPtr) {
 				warning("Resource::load() not enough memory");
-				me->valid = 0;
+				me->state = 0;
 				continue;
 			}
 		}
@@ -156,16 +160,16 @@ void Resource::load() {
 
 		if (me->bankId == 0) {
 			warning("Resource::load() ec=0x%X (me->bankId == 0)", 0xF00);
-			me->valid = 0;
+			me->state = MEMENTRY_STATE_NOT_NEEDED;
 		} else {
 			debug(DBG_BANK, "Resource::load() bufPos=%X size=%X type=%X pos=%X bankId=%X", loadDestination - _memPtrStart, me->packedSize, me->type, me->bankOffset, me->bankId);
 			readBank(me, loadDestination);
 			if(me->type == RT_VIDBUF) {
 				video->copyPagePtr(_vidCurPtr);
-				me->valid = 0;
+				me->state = 0;
 			} else {
 				me->bufPtr = loadDestination;
-				me->valid = 1;
+				me->state = MEMENTRY_STATE_LOADED;
 				_scriptCurPtr += me->size;
 			}
 		}
@@ -180,7 +184,7 @@ void Resource::invalidateRes() {
 	uint16 i = _numMemList;
 	while (i--) {
 		if (me->type <= RT_VIDBUF || me->type > 6) {  // 6 WTF ?!?! ResType goes up to 5 !!
-			me->valid = 0;
+			me->state = MEMENTRY_STATE_NOT_NEEDED;
 		}
 		++me;
 	}
@@ -191,26 +195,37 @@ void Resource::invalidateAll() {
 	MemEntry *me = _memList;
 	uint16 i = _numMemList;
 	while (i--) {
-		me->valid = 0;
+		me->state = 0;
 		++me;
 	}
 	_scriptCurPtr = _memPtrStart;
 }
 
-void Resource::update(uint16 resourceId) {
+/* This method serves two purpose: 
+    - Load parts in memory segments (palette,code,video1,video2)
+	           or
+    - Load a resource in memory
+
+	This is decided based on the resourceId. If it does not match a mementry id it is supposed to 
+	be a part id. */
+void Resource::loadPartsOrMemoryEntry(uint16 resourceId) {
 
 	if (resourceId > _numMemList) {
 		requestedNextPart = resourceId;
 	} else {
 		MemEntry *me = &_memList[resourceId];
-		if (me->valid == 0) {
-			me->valid = 2;
+		if (me->state == MEMENTRY_STATE_NOT_NEEDED) {
+			me->state = MEMENTRY_STATE_LOAD_ME;
 			load();
 		}
 	}
 
 }
 
+/* Protection screen and cinematic don't need the player and enemies polygon data
+   so _memList[video2Index] is never loaded for those parts of the game. When 
+   needed (for action phrases) _memList[video2Index] is always loaded with 0x11 
+   (as seen in memListParts). */
 void Resource::setupPart(uint16 partId) {
 
 	printf("setupPart %X\n",partId);
@@ -230,12 +245,12 @@ void Resource::setupPart(uint16 partId) {
 
 	invalidateAll();
 
-	_memList[palleteIndex].valid = 2;
-	_memList[codeIndex].valid = 2;
-	_memList[video1Index].valid = 2;
+	_memList[palleteIndex].state = 2;
+	_memList[codeIndex].state = 2;
+	_memList[video1Index].state = 2;
 
-	if (video2Index != 0) 
-		_memList[video2Index].valid = 2;
+	if (video2Index != MEMLIST_PART_NONE) 
+		_memList[video2Index].state = 2;
 	
 
 	load();
@@ -244,7 +259,7 @@ void Resource::setupPart(uint16 partId) {
 	_segCode     = _memList[codeIndex].bufPtr;
 	_segVideo1   = _memList[video1Index].bufPtr;
 
-	if (video2Index != 0) 
+	if (video2Index != MEMLIST_PART_NONE) 
 		_segVideo2 = _memList[video2Index].bufPtr;
 	
 
@@ -277,7 +292,7 @@ void Resource::saveOrLoad(Serializer &ser) {
 			MemEntry *me = 0;
 			uint16 num = _numMemList;
 			while (num--) {
-				if (it->valid == 1 && it->bufPtr == q) {
+				if (it->state == 1 && it->bufPtr == q) {
 					me = it;
 				}
 				++it;
@@ -315,7 +330,7 @@ void Resource::saveOrLoad(Serializer &ser) {
 			MemEntry *me = &_memList[*p++];
 			readBank(me, q);
 			me->bufPtr = q;
-			me->valid = 1;
+			me->state = 1;
 			q += me->size;
 		}
 	}	

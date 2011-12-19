@@ -44,8 +44,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\research\SDL-devel-1.2.14-VC8\SDL-1.2.14\include;C:\research\zlib125\zlib-1.2.5;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\research\SDL-devel-1.2.14-VC8\SDL-1.2.14\lib;C:\research\zlib125\zlib-1.2.5\old\visualc6\Win32_DLL_Release;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\research\SDL-devel-1.2.14-VC8\SDL-1.2.14\include;C:\research\zlib125\zlib-1.2.5;C:\research\lpng154\lpng154;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\research\SDL-devel-1.2.14-VC8\SDL-1.2.14\lib;C:\research\zlib125\zlib-1.2.5\old\visualc6\Win32_DLL_Release;C:\research\lpng154\lpng154\projects\vstudio\Release Library;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -79,7 +79,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <OutputFile>C:\research\another-world\Another World\rawRelease.exe</OutputFile>
-      <AdditionalDependencies>sdl.lib;sdlmain.lib;zlib1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>sdl.lib;sdlmain.lib;zlib1.lib;libpng15.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

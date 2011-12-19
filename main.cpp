@@ -135,6 +135,9 @@ int main(int argc, char *argv[]) {
 	   to live for 1 (20ms ; 50Hz) up to 5 (100ms ; 10Hz).
 
 
+	   30 something opcode. The graphic opcode are more complex, not only the declare the operation to perform
+	   they also define where to find the vertices (segVideo1 or segVideo2).
+
    Video :
    =======
 	   Double buffer architecture. AW optcodes even has a special instruction for blitting from one
@@ -188,6 +191,10 @@ int main(int argc, char *argv[]) {
    Q: Why is a palette 2048 bytes if there are only 16 colors ? I would have expected 48 bytes...
    A: ???
 
+   Q: Why does Resource::load() search for ressource to load from higher to lower....since it will load stuff
+      until no more ressources are marked as "Need to be loaded".
+   A: ???
+
    Orignial DOS version :
    ======================
 
@@ -238,6 +245,25 @@ int main(int argc, char *argv[]) {
 
    If you are used to RGBA 32bits per pixel framebuffer you are in for a shock:
    Another world is 16 colors palette based, making it 4bits per pixel !!
+
+   Video generation :
+   ==================
+
+   Thank god the engine sets the palette before starting to drawing instead of after bliting.
+   I would have been unable to generate screenshots otherwise.
+
+   Memor managment :
+   =================
+
+   There is 0 malloc during the game. All resources are loaded in one big buffer (Resource::load).
+   The entire buffer is "freed" at the end of a game part.
+
+
+   RETARTED :
+   ==========
+
+   * Why does memlist.bin uses a special state field 0xFF in order to mark the end of resources ??!
+     It would have been so much easier to write the number of resources at the beginning of the code.
 
    TODO :
    ======

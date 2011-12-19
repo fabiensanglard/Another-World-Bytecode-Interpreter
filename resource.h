@@ -22,12 +22,17 @@
 #include "intern.h"
 
 
+#define MEMENTRY_STATE_END_OF_MEMLIST 0xFF
+#define MEMENTRY_STATE_NOT_NEEDED 0 
+#define MEMENTRY_STATE_LOADED 1
+#define MEMENTRY_STATE_LOAD_ME 2
+
 /*
     This is a directory entry. When the game starts, it loads memlist.bin and 
 	populate and array of MemEntry
 */
 struct MemEntry {
-	uint8 valid;         // 0x0
+	uint8 state;         // 0x0
 	uint8 type;          // 0x1, Resource::ResType
 	uint8 *bufPtr;       // 0x2
 	uint16 unk4;         // 0x4, unused
@@ -42,7 +47,7 @@ struct MemEntry {
 	uint16 size; // 0x12
 };
 /*
-     Note: valid is not a boolean, it can have value 0, 1 or 2. WTF ?!
+     Note: state is not a boolean, it can have value 0, 1 or 2. WTF ?!
 
 */
 
@@ -91,7 +96,7 @@ struct Resource {
 	void load();
 	void invalidateAll();
 	void invalidateRes();	
-	void update(uint16 num);
+	void loadPartsOrMemoryEntry(uint16 num);
 	void setupPart(uint16 ptrId);
 	void allocMemBlock();
 	void freeMemBlock();

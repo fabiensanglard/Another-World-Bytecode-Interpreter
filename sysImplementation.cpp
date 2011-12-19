@@ -63,6 +63,7 @@ struct SDLStub : System {
 	virtual void destroyMutex(void *mutex);
 	virtual void lockMutex(void *mutex);
 	virtual void unlockMutex(void *mutex);
+	uint8* getOffScreenFramebuffer();
 
 	void prepareGfxMode();
 	void cleanupGfxMode();
@@ -468,6 +469,12 @@ void SDLStub::scale3x(uint16 *dst, uint16 dstPitch, const uint16 *src, uint16 sr
 		dst += dstPitch * 3;
 		src += srcPitch;
 	}
+}
+
+
+uint8* SDLStub::getOffScreenFramebuffer()
+{
+	return _offscreen;
 }
 
 

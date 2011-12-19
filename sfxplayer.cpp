@@ -50,7 +50,7 @@ void SfxPlayer::loadSfxModule(uint16 resNum, uint16 delay, uint8 pos) {
 
 	MemEntry *me = &res->_memList[resNum];
 
-	if (me->valid == 1 && me->type == Resource::ResType::RT_MUSIC) {
+	if (me->state == 1 && me->type == Resource::ResType::RT_MUSIC) {
 		_resNum = resNum;
 		memset(&_sfxMod, 0, sizeof(SfxModule));
 		_sfxMod.curOrder = pos;
@@ -83,7 +83,7 @@ void SfxPlayer::prepareInstruments(const uint8 *p) {
 		if (resNum != 0) {
 			ins->volume = READ_BE_UINT16(p);
 			MemEntry *me = &res->_memList[resNum];
-			if (me->valid == 1 && me->type == 0) {
+			if (me->state == 1 && me->type == 0) {
 				ins->data = me->bufPtr;
 				memset(ins->data + 8, 0, 4);
 				debug(DBG_SND, "Loaded instrument 0x%X n=%d volume=%d", resNum, i, ins->volume);

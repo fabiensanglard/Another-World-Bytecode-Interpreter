@@ -29,5 +29,7 @@ extern const uint16 memListParts[GAME_NUM_PARTS][4];
 #define MEMLIST_PART_VIDEO2  3
 
 
+#define MEMLIST_PART_NONE 0x00
+
 
 #endif
