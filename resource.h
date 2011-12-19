@@ -84,7 +84,7 @@ struct Resource {
 	uint8 *_memPtrStart, *_scriptBakPtr, *_scriptCurPtr, *_vidBakPtr, *_vidCurPtr;
 	bool _useSegVideo2;
 
-	uint8 *segPalette;
+	uint8 *segPalettes;
 	uint8 *segBytecode;
 	uint8 *segCinematic;
 	uint8 *_segVideo2;

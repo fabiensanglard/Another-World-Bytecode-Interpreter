@@ -262,7 +262,7 @@ void Resource::setupPart(uint16 partId) {
 
 	loadMarkedAsNeeded();
 
-	segPalette = _memList[palleteIndex].bufPtr;
+	segPalettes = _memList[palleteIndex].bufPtr;
 	segBytecode     = _memList[codeIndex].bufPtr;
 	segCinematic   = _memList[video1Index].bufPtr;
 
@@ -324,7 +324,7 @@ void Resource::saveOrLoad(Serializer &ser) {
 		SE_PTR(&_vidBakPtr, VER(1)),
 		SE_PTR(&_vidCurPtr, VER(1)),
 		SE_INT(&_useSegVideo2, Serializer::SES_BOOL, VER(1)),
-		SE_PTR(&segPalette, VER(1)),
+		SE_PTR(&segPalettes, VER(1)),
 		SE_PTR(&segBytecode, VER(1)),
 		SE_PTR(&segCinematic, VER(1)),
 		SE_PTR(&_segVideo2, VER(1)),

@@ -607,7 +607,7 @@ uint8 *Video::allocPage() {
 */
 
 /*
-Note: The palette used to be allocated on the stack but I moved it to
+Note: The palettes set used to be allocated on the stack but I moved it to
       the heap so I could dump the four framebuffer and follow how
 	  frames are generated.
 */
@@ -617,7 +617,7 @@ void Video::changePal(uint8 palNum) {
 	if (palNum >= 32)
 		return;
 	
-	uint8 *p = res->segPalette + palNum * 32;
+	uint8 *p = res->segPalettes + palNum * 32; //colors are coded on 2bytes (565) for 16 colors = 32
 
 	// Moved to the heap, legacy code used to allocate the palette
 	// on the stack.
@@ -637,10 +637,36 @@ void Video::changePal(uint8 palNum) {
 	currentPaletteId = palNum;
 
 
-	#if TRACE_FRAMEBUFFER
-//	printf("")
+	#if TRACE_PALETTE
+	printf("\nuint8 dumpPalette[48] = {\n");
+	for (int i = 0; i < NUM_COLORS; ++i) 
+	{
+		printf("0x%X,0x%X,0x%Xn",pal[i * 3 + 0],pal[i * 3 + 1],pal[i * 3 + 2]);
+	}
+	printf("\n};\n");
 	#endif
 }
+/*
+uint8 dumpPalette[48] = {
+ 0x0, 0x0, 0x0,
+ 0x22, 0x0, 0x0,
+ 0x4, 0x8, 0x11,
+ 0x4, 0xC, 0x15,
+ 0x8, 0x11, 0x19,
+ 0xC, 0x15, 0x1D,
+ 0x15, 0x1D, 0x26,
+ 0x1D, 0x2A, 0x2E,
+ 0x1D, 0x1D, 0x1D,
+ 0x15, 0x15, 0x15,
+ 0xC, 0x8, 0xC,
+ 0x11, 0x11, 0x15,
+ 0x1D, 0x15, 0x15,
+ 0x15, 0x0, 0x0,
+ 0x0, 0x4, 0xC,
+ 0x3F, 0x3F, 0x2A,
+
+};
+*/
 
 void Video::updateDisplay(uint8 pageId) {
 
