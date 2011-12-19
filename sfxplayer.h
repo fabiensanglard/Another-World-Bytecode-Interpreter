@@ -54,8 +54,8 @@ struct System;
 
 struct SfxPlayer {
 	Mixer *mixer;
-	Resource *_res;
-	System *_stub;
+	Resource *res;
+	System *sys;
 
 	void *_mutex;
 	void *_timerId;

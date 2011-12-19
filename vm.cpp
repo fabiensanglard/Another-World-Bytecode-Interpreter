@@ -25,11 +25,10 @@
 #include "sfxplayer.h"
 #include "sys.h"
 #include "parts.h"
+#include "file.h"
 
-//#define BYPASS_PROTECTION 1
-
-VirtualMachine::VirtualMachine(Mixer *mix, Resource *res, SfxPlayer *ply, Video *vid, System *stub)
-	: mixer(mix), _res(res), player(ply), video(vid), _stub(stub) {
+VirtualMachine::VirtualMachine(Mixer *mix, Resource *resParameter, SfxPlayer *ply, Video *vid, System *stub)
+	: mixer(mix), res(resParameter), player(ply), video(vid), sys(stub) {
 }
 
 void VirtualMachine::init() {
@@ -44,27 +43,27 @@ void VirtualMachine::init() {
 
 void VirtualMachine::op_movConst() {
 	uint8 variableId = _scriptPtr.fetchByte();
-	int16 n = _scriptPtr.fetchWord();
-	debug(DBG_VM, "VirtualMachine::op_movConst(0x%02X, %d)", variableId, n);
-	vmVariables[variableId] = n;
+	int16 value = _scriptPtr.fetchWord();
+	debug(DBG_VM, "VirtualMachine::op_movConst(0x%02X, %d)", variableId, value);
+	vmVariables[variableId] = value;
 }
 
 void VirtualMachine::op_mov() {
-	uint8 variableId = _scriptPtr.fetchByte();
-	uint8 j = _scriptPtr.fetchByte();	
-	debug(DBG_VM, "VirtualMachine::op_mov(0x%02X, 0x%02X)", variableId, j);
-	vmVariables[variableId] = vmVariables[j];
+	uint8 dstVariableId = _scriptPtr.fetchByte();
+	uint8 srcVariableId = _scriptPtr.fetchByte();	
+	debug(DBG_VM, "VirtualMachine::op_mov(0x%02X, 0x%02X)", dstVariableId, srcVariableId);
+	vmVariables[dstVariableId] = vmVariables[srcVariableId];
 }
 
 void VirtualMachine::op_add() {
-	uint8 variableId = _scriptPtr.fetchByte();
-	uint8 j = _scriptPtr.fetchByte();
-	debug(DBG_VM, "VirtualMachine::op_add(0x%02X, 0x%02X)", variableId, j);
-	vmVariables[variableId] += vmVariables[j];
+	uint8 dstVariableId = _scriptPtr.fetchByte();
+	uint8 srcVariableId = _scriptPtr.fetchByte();
+	debug(DBG_VM, "VirtualMachine::op_add(0x%02X, 0x%02X)", dstVariableId, srcVariableId);
+	vmVariables[dstVariableId] += vmVariables[srcVariableId];
 }
 
 void VirtualMachine::op_addConst() {
-	if (_res->currentPartId == 0x3E86 && _scriptPtr.pc == _res->_segCode + 0x6D48) {
+	if (res->currentPartId == 0x3E86 && _scriptPtr.pc == res->_segCode + 0x6D48) {
 		warning("VirtualMachine::op_addConst() hack for non-stop looping gun sound bug");
 		// the script 0x27 slot 0x17 doesn't stop the gun sound from looping, I 
 		// don't really know why ; for now, let's play the 'stopping sound' like 
@@ -75,9 +74,9 @@ void VirtualMachine::op_addConst() {
 		snd_playSound(0x5B, 1, 64, 1);
 	}
 	uint8 variableId = _scriptPtr.fetchByte();
-	int16 n = _scriptPtr.fetchWord();
-	debug(DBG_VM, "VirtualMachine::op_addConst(0x%02X, %d)", variableId, n);
-	vmVariables[variableId] += n;
+	int16 value = _scriptPtr.fetchWord();
+	debug(DBG_VM, "VirtualMachine::op_addConst(0x%02X, %d)", variableId, value);
+	vmVariables[variableId] += value;
 }
 
 void VirtualMachine::op_call() {
@@ -86,12 +85,12 @@ void VirtualMachine::op_call() {
 	uint8 sp = _stackPtr;
 
 	debug(DBG_VM, "VirtualMachine::op_call(0x%X)", offset);
-	_scriptStackCalls[sp] = _scriptPtr.pc - _res->_segCode;
+	_scriptStackCalls[sp] = _scriptPtr.pc - res->_segCode;
 	if (_stackPtr == 0xFF) {
 		error("VirtualMachine::op_call() ec=0x%X stack overflow", 0x8F);
 	}
 	++_stackPtr;
-	_scriptPtr.pc = _res->_segCode + offset ;
+	_scriptPtr.pc = res->_segCode + offset ;
 }
 
 void VirtualMachine::op_ret() {
@@ -101,7 +100,7 @@ void VirtualMachine::op_ret() {
 	}	
 	--_stackPtr;
 	uint8 sp = _stackPtr;
-	_scriptPtr.pc = _res->_segCode + _scriptStackCalls[sp];
+	_scriptPtr.pc = res->_segCode + _scriptStackCalls[sp];
 }
 
 void VirtualMachine::op_break() {
@@ -110,16 +109,16 @@ void VirtualMachine::op_break() {
 }
 
 void VirtualMachine::op_jmp() {
-	uint16 off = _scriptPtr.fetchWord();
-	debug(DBG_VM, "VirtualMachine::op_jmp(0x%02X)", off);
-	_scriptPtr.pc = _res->_segCode + off;	
+	uint16 pcOffset = _scriptPtr.fetchWord();
+	debug(DBG_VM, "VirtualMachine::op_jmp(0x%02X)", pcOffset);
+	_scriptPtr.pc = res->_segCode + pcOffset;	
 }
 
 void VirtualMachine::op_setSetVect() {
 	uint8 threadId = _scriptPtr.fetchByte();
-	uint16 n = _scriptPtr.fetchWord();
-	debug(DBG_VM, "VirtualMachine::op_setSetVect(0x%X, 0x%X)", threadId, n);
-	_scriptSlotsPos[1][threadId] = n;
+	uint16 pcOffsetRequested = _scriptPtr.fetchWord();
+	debug(DBG_VM, "VirtualMachine::op_setSetVect(0x%X, 0x%X)", threadId,pcOffsetRequested);
+	threadsData[1][threadId] = pcOffsetRequested;
 }
 
 void VirtualMachine::op_jnz() {
@@ -133,11 +132,15 @@ void VirtualMachine::op_jnz() {
 	}
 }
 
-
+#define BYPASS_PROTECTION
 void VirtualMachine::op_condJmp() {
-
+	
+	//printf("Jump : %X \n",_scriptPtr.pc-res->_segCode);
+//FCS Whoever wrote this is patching the bytecode on the fly. This is ballzy !!
 #ifdef BYPASS_PROTECTION
-	if (_res->currentPartId == VM_FIRST_PART && _scriptPtr.pc == _res->_segCode + 0xCB9) {
+	
+	if (res->currentPartId == GAME_PART_FIRST && _scriptPtr.pc == res->_segCode + 0xCB9) {
+		/*
 		// (0x0CB8) condJmp(0x80, VAR(41), VAR(30), 0xCD3)
 		*(_scriptPtr.pc + 0x00) = 0x81;
 		*(_scriptPtr.pc + 0x03) = 0x0D;
@@ -146,9 +149,12 @@ void VirtualMachine::op_condJmp() {
 		*(_scriptPtr.pc + 0x99) = 0x0D;
 		*(_scriptPtr.pc + 0x9A) = 0x5A;
 		printf("VirtualMachine::op_condJmp() bypassing protection");
-
-		//exit(0);
+		printf("bytecode has been patched/n");
+		*/
+		this->bypassProtection() ;
 	}
+	
+	
 #endif
 
 	uint8 opcode = _scriptPtr.fetchByte();
@@ -228,35 +234,35 @@ void VirtualMachine::op_resetThread() {
 	debug(DBG_VM, "VirtualMachine::op_resetThread(%d, %d, %d)", threadId, i, a);
 
 	if (a == 2) {
-		uint16 *p = &_scriptSlotsPos[1][threadId];
+		uint16 *p = &threadsData[1][threadId];
 		while (n--) {
 			*p++ = 0xFFFE;
 		}
 	} else if (a < 2) {
-		uint8 *p = &vmChannelPaused[1][threadId];
+		uint8 *p = &vmIsChannelActive[1][threadId];
 		while (n--) {
 			*p++ = a;
 		}
 	}
 }
 
-void VirtualMachine::op_selectPage() {
+void VirtualMachine::op_selectVideoPage() {
 	uint8 frameBufferId = _scriptPtr.fetchByte();
-	debug(DBG_VM, "VirtualMachine::op_selectPage(%d)", frameBufferId);
+	debug(DBG_VM, "VirtualMachine::op_selectVideoPage(%d)", frameBufferId);
 	video->changePagePtr1(frameBufferId);
 }
 
-void VirtualMachine::op_fillPage() {
+void VirtualMachine::op_fillVideoPage() {
 	uint8 pageId = _scriptPtr.fetchByte();
 	uint8 color = _scriptPtr.fetchByte();
-	debug(DBG_VM, "VirtualMachine::op_fillPage(%d, %d)", pageId, color);
+	debug(DBG_VM, "VirtualMachine::op_fillVideoPage(%d, %d)", pageId, color);
 	video->fillPage(pageId, color);
 }
 
-void VirtualMachine::op_copyPage() {
+void VirtualMachine::op_copyVideoPage() {
 	uint8 srcPageId = _scriptPtr.fetchByte();
 	uint8 dstPageId = _scriptPtr.fetchByte();
-	debug(DBG_VM, "VirtualMachine::op_copyPage(%d, %d)", srcPageId, dstPageId);
+	debug(DBG_VM, "VirtualMachine::op_copyVideoPage(%d, %d)", srcPageId, dstPageId);
 	video->copyPage(srcPageId, dstPageId, vmVariables[VM_VARIABLE_SCROLL_Y]);
 }
 
@@ -269,12 +275,12 @@ void VirtualMachine::op_blitFramebuffer() {
 	inp_handleSpecialKeys();
 
 	//Nasty hack....was this present in the original assembly  ??!!
-	if (_res->currentPartId == GAME_PART_FIRST && vmVariables[0x67] == 1) 
+	if (res->currentPartId == GAME_PART_FIRST && vmVariables[0x67] == 1) 
 		vmVariables[0xDC] = 0x21;
 	
 	if (!_fastMode) {
 
-		int32 delay = _stub->getTimeStamp() - lastTimeStamp;
+		int32 delay = sys->getTimeStamp() - lastTimeStamp;
 		int32 timeToSleep = vmVariables[VM_VARIABLE_PAUSE_SLICES] * 20 - delay;
 
 		// The bytecode will set vmVariables[VM_VARIABLE_PAUSE_SLICES] from 1 to 5
@@ -286,12 +292,13 @@ void VirtualMachine::op_blitFramebuffer() {
 		if (timeToSleep > 0)
 		{
 		//	printf("Sleeping for=%d\n",timeToSleep);
-			_stub->sleep(timeToSleep);
+			sys->sleep(timeToSleep);
 		}
 
-		lastTimeStamp = _stub->getTimeStamp();
+		lastTimeStamp = sys->getTimeStamp();
 	}
 
+	//WTF ?
 	vmVariables[0xF7] = 0;
 
 	video->updateDisplay(pageId);
@@ -299,7 +306,7 @@ void VirtualMachine::op_blitFramebuffer() {
 
 void VirtualMachine::op_halt() {
 	debug(DBG_VM, "VirtualMachine::op_halt()");
-	_scriptPtr.pc = _res->_segCode + 0xFFFF;
+	_scriptPtr.pc = res->_segCode + 0xFFFF;
 	_scriptHalted = true;
 }
 
@@ -366,9 +373,9 @@ void VirtualMachine::op_updateMemList() {
 	if (resourceId == 0) {
 		player->stop();
 		mixer->stopAll();
-		_res->invalidateRes();
+		res->invalidateRes();
 	} else {
-		_res->update(resourceId);
+		res->update(resourceId);
 	}
 }
 
@@ -385,25 +392,29 @@ void VirtualMachine::initForPart(uint16 partId) {
 	player->stop();
 	mixer->stopAll();
 
+	//WTF is that ?
 	vmVariables[0xE4] = 0x14;
 
-	_res->setupPart(partId);
+	res->setupPart(partId);
 
-	memset((uint8 *)_scriptSlotsPos, 0xFF, sizeof(_scriptSlotsPos));
-	memset((uint8 *)vmChannelPaused, 0, sizeof(vmChannelPaused));
+	memset((uint8 *)threadsData, 0xFF, sizeof(threadsData));
 
-	_scriptSlotsPos[0][0] = 0;	
+
+	memset((uint8 *)vmIsChannelActive, 0, sizeof(vmIsChannelActive));
+	
+	int firstThreadId = 0;
+	threadsData[PC_OFFSET][firstThreadId] = 0;	
 }
 
 /* 
      This is called every frames in the infinite loop.
 */
-void VirtualMachine::setupScripts() {
+void VirtualMachine::checkThreadRequests() {
 
 	//Check if a part switch has been requested.
-	if (_res->requestedNextPart != 0) {
-		initForPart(_res->requestedNextPart);
-		_res->requestedNextPart = 0;
+	if (res->requestedNextPart != 0) {
+		initForPart(res->requestedNextPart);
+		res->requestedNextPart = 0;
 	}
 
 	
@@ -413,19 +424,21 @@ void VirtualMachine::setupScripts() {
 
 	// JUMP:
 	// Note: If a jump has been requested, the jump destination is stored
-	// in _scriptSlotsPos[1]. Otherwise _scriptSlotsPos[1] == 0xFFFF
+	// in threadsData[REQUESTED_PC_OFFSET]. Otherwise threadsData[REQUESTED_PC_OFFSET] == 0xFFFF
 
 	// PAUSE:
-	// Note: If a pause has been requested it is stored in  vmChannelPaused[1][i]
+	// Note: If a pause has been requested it is stored in  vmIsChannelActive[REQUESTED_STATE][i]
 
-	for (int i = 0; i < VM_NUM_THREADS; ++i) {
+	for (int threadId = 0; threadId < VM_NUM_THREADS; threadId++) {
 
-		vmChannelPaused[0][i] = vmChannelPaused[1][i];
+		vmIsChannelActive[CURR_STATE][threadId] = vmIsChannelActive[REQUESTED_STATE][threadId];
 
-		uint16 n = _scriptSlotsPos[1][i];
+		uint16 n = threadsData[REQUESTED_PC_OFFSET][threadId];
+
 		if (n != VM_NO_SETVEC_REQUESTED) {
-			_scriptSlotsPos[0][i] = (n == 0xFFFE) ? VM_INACTIVE_THREAD : n;
-			_scriptSlotsPos[1][i] = VM_NO_SETVEC_REQUESTED;
+
+			threadsData[PC_OFFSET][threadId] = (n == 0xFFFE) ? VM_INACTIVE_THREAD : n;
+			threadsData[REQUESTED_PC_OFFSET][threadId] = VM_NO_SETVEC_REQUESTED;
 		}
 	}
 }
@@ -436,31 +449,31 @@ void VirtualMachine::hostFrame() {
 	// Inactive threads are marked with a thread instruction pointer set to 0xFFFF (VM_INACTIVE_THREAD).
 	// A thread must feature a break opcode so the interpreter can move to the next thread.
 
-	for (int i = 0; i < VM_NUM_THREADS; ++i) {
+	for (int threadId = 0; threadId < VM_NUM_THREADS; threadId++) {
 
-		if (vmChannelPaused[0][i])
+		if (vmIsChannelActive[CURR_STATE][threadId])
 			continue;
 		
-		uint16 n = _scriptSlotsPos[0][i];
+		uint16 n = threadsData[0][threadId];
 
 		if (n != VM_INACTIVE_THREAD) {
 
 			// Set the script pointer to the right location.
-			// script pc is used in executeScript in order
+			// script pc is used in executeThread in order
 			// to get the next opcode.
-			_scriptPtr.pc = _res->_segCode + n;
+			_scriptPtr.pc = res->_segCode + n;
 			_stackPtr = 0;
 
 			_scriptHalted = false;
-			debug(DBG_VM, "VirtualMachine::hostFrame() i=0x%02X n=0x%02X *p=0x%02X", i, n, *_scriptPtr.pc);
-			executeScript();
+			debug(DBG_VM, "VirtualMachine::hostFrame() i=0x%02X n=0x%02X *p=0x%02X", threadId, n, *_scriptPtr.pc);
+			executeThread();
 
 			//Since .pc is going to be modified by this next loop iteration, we need to save it.
-			_scriptSlotsPos[0][i] = _scriptPtr.pc - _res->_segCode;
+			threadsData[PC_OFFSET][threadId] = _scriptPtr.pc - res->_segCode;
 
 
-			debug(DBG_VM, "VirtualMachine::hostFrame() i=0x%02X pos=0x%X", i, _scriptSlotsPos[0][i]);
-			if (_stub->input.quit) {
+			debug(DBG_VM, "VirtualMachine::hostFrame() i=0x%02X pos=0x%X", threadId, threadsData[0][threadId]);
+			if (sys->input.quit) {
 				break;
 			}
 		}
@@ -471,7 +484,9 @@ void VirtualMachine::hostFrame() {
 #define COLOR_BLACK 0xFF
 #define DEFAULT_ZOOM 0x40
 
-void VirtualMachine::executeScript() {
+
+void VirtualMachine::executeThread() {
+
 	while (!_scriptHalted) {
 		uint8 opcode = _scriptPtr.fetchByte();
 
@@ -479,7 +494,7 @@ void VirtualMachine::executeScript() {
 		if (opcode & 0x80) 
 		{
 			uint16 off = ((opcode << 8) | _scriptPtr.fetchByte()) * 2;
-			_res->_useSegVideo2 = false;
+			res->_useSegVideo2 = false;
 			int16 x = _scriptPtr.fetchByte();
 			int16 y = _scriptPtr.fetchByte();
 			int16 h = y - 199;
@@ -488,16 +503,20 @@ void VirtualMachine::executeScript() {
 				x += h;
 			}
 			debug(DBG_VIDEO, "vid_opcd_0x80 : opcode=0x%X off=0x%X x=%d y=%d", opcode, off, x, y);
-			video->setDataBuffer(_res->_segVideo1, off);
-			video->drawShape(COLOR_BLACK, DEFAULT_ZOOM, Point(x,y));
+
+			video->setDataBuffer(res->_segVideo1, off);
+			video->readAndDrawPolygon(COLOR_BLACK, DEFAULT_ZOOM, Point(x,y));
+
+			continue;
 		} 
+
 		// 0100 0000 is set
-		else if (opcode & 0x40) 
+		if (opcode & 0x40) 
 		{
 			int16 x, y;
 			uint16 off = _scriptPtr.fetchWord() * 2;
 			x = _scriptPtr.fetchByte();
-			_res->_useSegVideo2 = false;
+			res->_useSegVideo2 = false;
 			if (!(opcode & 0x20)) 
 			{
 				if (!(opcode & 0x10)) 
@@ -542,38 +561,40 @@ void VirtualMachine::executeScript() {
 			else 
 			{
 				if (opcode & 1) {
-					_res->_useSegVideo2 = true;
+					res->_useSegVideo2 = true;
 					--_scriptPtr.pc;
 					zoom = 0x40;
 				}
 			}
 			debug(DBG_VIDEO, "vid_opcd_0x40 : off=0x%X x=%d y=%d", off, x, y);
-			video->setDataBuffer(_res->_useSegVideo2 ? _res->_segVideo2 : _res->_segVideo1, off);
-			video->drawShape(0xFF, zoom, Point(x, y));
+			video->setDataBuffer(res->_useSegVideo2 ? res->_segVideo2 : res->_segVideo1, off);
+			video->readAndDrawPolygon(0xFF, zoom, Point(x, y));
+
+			continue;
+		} 
+		 
+		
+		if (opcode > 0x1A) 
+		{
+			error("VirtualMachine::executeThread() ec=0x%X invalid opcode=0x%X", 0xFFF, opcode);
 		} 
 		else 
 		{
-			if (opcode > 0x1A) 
-			{
-				error("VirtualMachine::executeScript() ec=0x%X invalid opcode=0x%X", 0xFFF, opcode);
-			} 
-			else 
-			{
-				(this->*opcodeTable[opcode])();
-			}
+			(this->*opcodeTable[opcode])();
 		}
+		
 	}
 }
 
 void VirtualMachine::inp_updatePlayer() {
 
-	_stub->processEvents();
+	sys->processEvents();
 
-	if (_res->currentPartId == 0x3E89) {
-		char c = _stub->input.lastChar;
+	if (res->currentPartId == 0x3E89) {
+		char c = sys->input.lastChar;
 		if (c == 8 | /*c == 0xD |*/ c == 0 | (c >= 'a' && c <= 'z')) {
 			vmVariables[VM_VARIABLE_LAST_KEYCHAR] = c & ~0x20;
-			_stub->input.lastChar = 0;
+			sys->input.lastChar = 0;
 		}
 	}
 
@@ -581,26 +602,26 @@ void VirtualMachine::inp_updatePlayer() {
 	int16 m = 0;
 	int16 ud = 0;
 
-	if (_stub->input.dirMask & PlayerInput::DIR_RIGHT) {
+	if (sys->input.dirMask & PlayerInput::DIR_RIGHT) {
 		lr = 1;
 		m |= 1;
 	}
-	if (_stub->input.dirMask & PlayerInput::DIR_LEFT) {
+	if (sys->input.dirMask & PlayerInput::DIR_LEFT) {
 		lr = -1;
 		m |= 2;
 	}
-	if (_stub->input.dirMask & PlayerInput::DIR_DOWN) {
+	if (sys->input.dirMask & PlayerInput::DIR_DOWN) {
 		ud = 1;
 		m |= 4;
 	}
 
 	vmVariables[VM_VARIABLE_HERO_POS_UP_DOWN] = ud;
 
-	if (_stub->input.dirMask & PlayerInput::DIR_UP) {
+	if (sys->input.dirMask & PlayerInput::DIR_UP) {
 		vmVariables[VM_VARIABLE_HERO_POS_UP_DOWN] = -1;
 	}
 
-	if (_stub->input.dirMask & PlayerInput::DIR_UP) { // inpJump
+	if (sys->input.dirMask & PlayerInput::DIR_UP) { // inpJump
 		ud = -1;
 		m |= 8;
 	}
@@ -610,7 +631,7 @@ void VirtualMachine::inp_updatePlayer() {
 	vmVariables[VM_VARIABLE_HERO_POS_MASK] = m;
 	int16 button = 0;
 
-	if (_stub->input.button) { // inpButton
+	if (sys->input.button) { // inpButton
 		button = 1;
 		m |= 0x80;
 	}
@@ -621,22 +642,22 @@ void VirtualMachine::inp_updatePlayer() {
 
 void VirtualMachine::inp_handleSpecialKeys() {
 
-	if (_stub->input.pause) {
+	if (sys->input.pause) {
 
-		if (_res->currentPartId != GAME_PART1 && _res->currentPartId != GAME_PART2) {
-			_stub->input.pause = false;
-			while (!_stub->input.pause) {
-				_stub->processEvents();
-				_stub->sleep(200);
+		if (res->currentPartId != GAME_PART1 && res->currentPartId != GAME_PART2) {
+			sys->input.pause = false;
+			while (!sys->input.pause) {
+				sys->processEvents();
+				sys->sleep(200);
 			}
 		}
-		_stub->input.pause = false;
+		sys->input.pause = false;
 	}
 
-	if (_stub->input.code) {
-		_stub->input.code = false;
-		if (_res->currentPartId != GAME_PART_LAST && _res->currentPartId != GAME_PART_FIRST) {
-			_res->requestedNextPart = GAME_PART_LAST;
+	if (sys->input.code) {
+		sys->input.code = false;
+		if (res->currentPartId != GAME_PART_LAST && res->currentPartId != GAME_PART_FIRST) {
+			res->requestedNextPart = GAME_PART_LAST;
 		}
 	}
 
@@ -651,7 +672,7 @@ void VirtualMachine::snd_playSound(uint16 resNum, uint8 freq, uint8 vol, uint8 c
 
 	debug(DBG_SND, "snd_playSound(0x%X, %d, %d, %d)", resNum, freq, vol, channel);
 	
-	MemEntry *me = &_res->_memList[resNum];
+	MemEntry *me = &res->_memList[resNum];
 
 	if (me->valid != 1)
 		return;
@@ -692,9 +713,27 @@ void VirtualMachine::saveOrLoad(Serializer &ser) {
 	Serializer::Entry entries[] = {
 		SE_ARRAY(vmVariables, 0x100, Serializer::SES_INT16, VER(1)),
 		SE_ARRAY(_scriptStackCalls, 0x100, Serializer::SES_INT16, VER(1)),
-		SE_ARRAY(_scriptSlotsPos, 0x40 * 2, Serializer::SES_INT16, VER(1)),
-		SE_ARRAY(vmChannelPaused, 0x40 * 2, Serializer::SES_INT8, VER(1)),
+		SE_ARRAY(threadsData, 0x40 * 2, Serializer::SES_INT16, VER(1)),
+		SE_ARRAY(vmIsChannelActive, 0x40 * 2, Serializer::SES_INT8, VER(1)),
 		SE_END()
 	};
 	ser.saveOrLoadEntries(entries);
 }
+
+void VirtualMachine::bypassProtection() 
+{
+	File f(true);
+
+	if (!f.open("bank0e", res->getDataDir(), "rb")) {
+		warning("Unable to bypass protection: add bank0e file to datadir");
+	} else {
+		Serializer s(&f, Serializer::SM_LOAD, res->_memPtrStart, 2);
+		this->saveOrLoad(s);
+		res->saveOrLoad(s);
+		video->saveOrLoad(s);
+		player->saveOrLoad(s);
+		mixer->saveOrLoad(s);
+	}
+	f.close();
+}
+

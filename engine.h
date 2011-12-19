@@ -33,10 +33,10 @@ struct Engine {
 		MAX_SAVE_SLOTS = 100
 	};
 
-	System *_stub;
+	System *sys;
 	VirtualMachine vm;
 	Mixer mixer;
-	Resource _res;
+	Resource res;
 	SfxPlayer player;
 	Video video;
 	const char *_dataDir, *_saveDir;
@@ -53,6 +53,7 @@ struct Engine {
 	void makeGameStateName(uint8 slot, char *buf);
 	void saveGameState(uint8 slot, const char *desc);
 	void loadGameState(uint8 slot);
+	const char* getDataDir();
 };
 
 #endif

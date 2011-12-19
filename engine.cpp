@@ -23,15 +23,15 @@
 #include "parts.h"
 
 Engine::Engine(System *paramSys, const char *dataDir, const char *saveDir)
-	: _stub(paramSys), vm(&mixer, &_res, &player, &video, _stub), mixer(_stub), _res(&video, dataDir), 
-	player(&mixer, &_res, _stub), video(&_res, _stub), _dataDir(dataDir), _saveDir(saveDir), _stateSlot(0) {
+	: sys(paramSys), vm(&mixer, &res, &player, &video, sys), mixer(sys), res(&video, dataDir), 
+	player(&mixer, &res, sys), video(&res, sys), _dataDir(dataDir), _saveDir(saveDir), _stateSlot(0) {
 }
 
 void Engine::run() {
 
-	while (!_stub->input.quit) {
+	while (!sys->input.quit) {
 
-		vm.setupScripts();
+		vm.checkThreadRequests();
 
 		vm.inp_updatePlayer();
 
@@ -46,7 +46,7 @@ void Engine::run() {
 Engine::~Engine(){
 
 	finish();
-	_stub->destroy();
+	sys->destroy();
 }
 
 
@@ -54,13 +54,13 @@ void Engine::init() {
 
 	
 	//Init system
-	_stub->init("Out Of This World");
+	sys->init("Out Of This World");
 
 	video.init();
 
-	_res.allocMemBlock();
+	res.allocMemBlock();
 
-	_res.readEntries();
+	res.readEntries();
 
 	vm.init();
 
@@ -68,37 +68,49 @@ void Engine::init() {
 
 	player.init();
 
-	//Init virtual machine
-	vm.initForPart(GAME_PART_FIRST); // demo starts at 0x3E81
+	//Init virtual machine, legacy way
+	//vm.initForPart(GAME_PART_FIRST); // This game part is the protection screen
 
+
+
+	// Try to cheat here. You can jump anywhere but the VM crashes afterward.
+	// Starting somewhere is probably not enough, the variables and calls return are probably missing.
+	vm.initForPart(GAME_PART2); // Skip protection screen and go directly to intro
+	//vm.initForPart(GAME_PART3); // CRASH
+	//vm.initForPart(GAME_PART4); // Start directly in jail but then crash
+	//vm.initForPart(GAME_PART5);   //CRASH
+	//vm.initForPart(GAME_PART6);   // Start in the battlechar but CRASH afteward
+	//vm.initForPart(GAME_PART7); //CRASH
+	//vm.initForPart(GAME_PART8); //CRASH
+	//vm.initForPart(GAME_PART9); // Green screen not doing anything
 }
 
 void Engine::finish() {
 	player.free();
 	mixer.free();
-	_res.freeMemBlock();
+	res.freeMemBlock();
 }
 
 void Engine::processInput() {
-	if (_stub->input.load) {
+	if (sys->input.load) {
 		loadGameState(_stateSlot);
-		_stub->input.load = false;
+		sys->input.load = false;
 	}
-	if (_stub->input.save) {
+	if (sys->input.save) {
 		saveGameState(_stateSlot, "quicksave");
-		_stub->input.save = false;
+		sys->input.save = false;
 	}
-	if (_stub->input.fastMode) {
+	if (sys->input.fastMode) {
 		vm._fastMode = !vm._fastMode;
-		_stub->input.fastMode = false;
+		sys->input.fastMode = false;
 	}
-	if (_stub->input.stateSlot != 0) {
-		int8 slot = _stateSlot + _stub->input.stateSlot;
+	if (sys->input.stateSlot != 0) {
+		int8 slot = _stateSlot + sys->input.stateSlot;
 		if (slot >= 0 && slot < MAX_SAVE_SLOTS) {
 			_stateSlot = slot;
 			debug(DBG_INFO, "Current game state slot is %d", _stateSlot);
 		}
-		_stub->input.stateSlot = 0;
+		sys->input.stateSlot = 0;
 	}
 }
 
@@ -121,9 +133,9 @@ void Engine::saveGameState(uint8 slot, const char *desc) {
 		strncpy(hdrdesc, desc, sizeof(hdrdesc) - 1);
 		f.write(hdrdesc, sizeof(hdrdesc));
 		// contents
-		Serializer s(&f, Serializer::SM_SAVE, _res._memPtrStart);
+		Serializer s(&f, Serializer::SM_SAVE, res._memPtrStart);
 		vm.saveOrLoad(s);
-		_res.saveOrLoad(s);
+		res.saveOrLoad(s);
 		video.saveOrLoad(s);
 		player.saveOrLoad(s);
 		mixer.saveOrLoad(s);
@@ -155,9 +167,9 @@ void Engine::loadGameState(uint8 slot) {
 			char hdrdesc[32];
 			f.read(hdrdesc, sizeof(hdrdesc));
 			// contents
-			Serializer s(&f, Serializer::SM_LOAD, _res._memPtrStart, ver);
+			Serializer s(&f, Serializer::SM_LOAD, res._memPtrStart, ver);
 			vm.saveOrLoad(s);
-			_res.saveOrLoad(s);
+			res.saveOrLoad(s);
 			video.saveOrLoad(s);
 			player.saveOrLoad(s);
 			mixer.saveOrLoad(s);
@@ -168,4 +180,10 @@ void Engine::loadGameState(uint8 slot) {
 			debug(DBG_INFO, "Loaded state from slot %d", _stateSlot);
 		}
 	}
+}
+
+
+const char* Engine::getDataDir()
+{
+	return this->_dataDir;
 }

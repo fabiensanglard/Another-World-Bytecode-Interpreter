@@ -39,9 +39,9 @@ const VirtualMachine::OpcodeStub VirtualMachine::opcodeTable[] = {
 	&VirtualMachine::op_setPalette,
 	/* 0x0C */
 	&VirtualMachine::op_resetThread,
-	&VirtualMachine::op_selectPage,
-	&VirtualMachine::op_fillPage,
-	&VirtualMachine::op_copyPage,
+	&VirtualMachine::op_selectVideoPage,
+	&VirtualMachine::op_fillVideoPage,
+	&VirtualMachine::op_copyVideoPage,
 	/* 0x10 */
 	&VirtualMachine::op_blitFramebuffer,
 	&VirtualMachine::op_halt,

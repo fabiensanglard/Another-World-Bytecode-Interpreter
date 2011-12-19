@@ -102,7 +102,7 @@
     <ClCompile Include="..\bank.cpp" />
     <ClCompile Include="..\engine.cpp" />
     <ClCompile Include="..\file.cpp" />
-    <ClCompile Include="..\parts.cPP" />
+    <ClCompile Include="..\parts.cpp" />
     <ClCompile Include="..\vm.cpp" />
     <ClCompile Include="..\main.cpp" />
     <ClCompile Include="..\mixer.cpp" />

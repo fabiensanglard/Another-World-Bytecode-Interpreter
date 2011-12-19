@@ -35,7 +35,7 @@ struct Polygon {
 	uint8 numPoints;
 	Point points[MAX_POINTS];
 
-	void init(const uint8 *p, uint16 zoom);
+	void readVertices(const uint8 *p, uint16 zoom);
 };
 
 struct Resource;
@@ -48,6 +48,8 @@ struct System;
 // Special value when no palette change is necessary
 #define NO_PALETTE_CHANGE_REQUESTED 0xFF 
 
+
+
 struct Video {
 	typedef void (Video::*drawLine)(int16 x1, int16 x2, uint8 col);
 
@@ -59,8 +61,8 @@ struct Video {
 	static const StrEntry _stringsTableEng[];
 	static const StrEntry _stringsTableDemo[];
 
-	Resource *_res;
-	System *_stub;
+	Resource *res;
+	System *sys;
 	
 
 
@@ -69,7 +71,7 @@ struct Video {
 
 	uint8 *_curPagePtr1, *_curPagePtr2, *_curPagePtr3;
 
-	Polygon _pg;
+	Polygon polygon;
 	int16 _hliney;
 
 	//Precomputer division lookup table
@@ -82,9 +84,9 @@ struct Video {
 	void init();
 
 	void setDataBuffer(uint8 *dataBuf, uint16 offset);
-	void drawShape(uint8 color, uint16 zoom, const Point &pt);
+	void readAndDrawPolygon(uint8 color, uint16 zoom, const Point &pt);
 	void fillPolygon(uint16 color, uint16 zoom, const Point &pt);
-	void drawShapeParts(uint16 zoom, const Point &pt);
+	void readAndDrawPolygonHierarchy(uint16 zoom, const Point &pt);
 	int32 calcStep(const Point &p1, const Point &p2, uint16 &dy);
 
 	void drawString(uint8 color, uint16 x, uint16 y, uint16 strId);
@@ -103,6 +105,11 @@ struct Video {
 	void updateDisplay(uint8 page);
 	
 	void saveOrLoad(Serializer &ser);
+
+	#define TRACE_FRAMEBUFFER 1
+	#if TRACE_FRAMEBUFFER
+		void Video::dumpFrameBuffers();
+	#endif
 };
 
 #endif

@@ -98,7 +98,7 @@ void Resource::readEntries() {
 			break;
 		}
 
-		debug(DBG_RES,"R:%3d, %s size=%5d (compacted=%d)",resourceCounter,resTypeToString[memEntry->type],memEntry->size,memEntry->packedSize==memEntry->size);	
+		debug(DBG_RES,"R:0x%X, %s size=%5d (compacted=%d)",resourceCounter,resTypeToString[memEntry->type],memEntry->size,memEntry->packedSize==memEntry->size);	
 		resourceCounter++;
 
 		_numMemList++;
@@ -319,4 +319,9 @@ void Resource::saveOrLoad(Serializer &ser) {
 			q += me->size;
 		}
 	}	
+}
+
+const char* Resource::getDataDir()
+{
+	return this->_dataDir;
 }

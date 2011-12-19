@@ -79,15 +79,15 @@ struct System {
 };
 
 struct MutexStack {
-	System *_stub;
+	System *sys;
 	void *_mutex;
 
 	MutexStack(System *stub, void *mutex) 
-		: _stub(stub), _mutex(mutex) {
-		_stub->lockMutex(_mutex);
+		: sys(stub), _mutex(mutex) {
+		sys->lockMutex(_mutex);
 	}
 	~MutexStack() {
-		_stub->unlockMutex(_mutex);
+		sys->unlockMutex(_mutex);
 	}
 };
 

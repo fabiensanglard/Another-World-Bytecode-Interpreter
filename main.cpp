@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
 			opt |= parseOption(argv[i], "savepath=", &savePath);
 		}
 		if (!opt) {
-			printf(USAGE);
+			//printf(USAGE);
 			return 0;
 		}
 	}
@@ -185,6 +185,8 @@ int main(int argc, char *argv[]) {
    A: See vm frame time: The vm frame duration is variable. The vm actually write for how long a video frame
       should be displayed in variable 0xFF. The value is the number of 20ms slice
 
+   Q: Why is a palette 2048 bytes if there are only 16 colors ? I would have expected 48 bytes...
+   A: ???
 
    Orignial DOS version :
    ======================
@@ -216,8 +218,26 @@ int main(int argc, char *argv[]) {
 
 
 
+   Polygons drawing :
+   =================
+
+   Polygons can be given as:
+    - a pure screenspace sequence of points: I call those screenspace polygons.
+	- a list of delta to add or substract to the first vertex. I call those: objectspace polygons.
+
+   Video : 
+   =======
+
+   Q: Why 4 framebuffer ?
+   A: It seems the background is generated once (like in the introduction) and stored in a framebuffer.
+      Everyframe the saved background is copied and new elements are drawn on top.
 
 
+   Trivia :
+   ========
+
+   If you are used to RGBA 32bits per pixel framebuffer you are in for a shock:
+   Another world is 16 colors palette based, making it 4bits per pixel !!
 
    TODO :
    ======

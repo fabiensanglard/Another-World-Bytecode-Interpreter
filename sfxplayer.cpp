@@ -24,31 +24,31 @@
 
 
 SfxPlayer::SfxPlayer(Mixer *mix, Resource *res, System *stub)
-	: mixer(mix), _res(res), _stub(stub), _delay(0), _resNum(0) {
+	: mixer(mix), res(res), sys(stub), _delay(0), _resNum(0) {
 }
 
 void SfxPlayer::init() {
-	_mutex = _stub->createMutex();
+	_mutex = sys->createMutex();
 }
 
 void SfxPlayer::free() {
 	stop();
-	_stub->destroyMutex(_mutex);
+	sys->destroyMutex(_mutex);
 }
 
 void SfxPlayer::setEventsDelay(uint16 delay) {
 	debug(DBG_SND, "SfxPlayer::setEventsDelay(%d)", delay);
-	MutexStack(_stub, _mutex);
+	MutexStack(sys, _mutex);
 	_delay = delay * 60 / 7050;
 }
 
 void SfxPlayer::loadSfxModule(uint16 resNum, uint16 delay, uint8 pos) {
 
 	debug(DBG_SND, "SfxPlayer::loadSfxModule(0x%X, %d, %d)", resNum, delay, pos);
-	MutexStack(_stub, _mutex);
+	MutexStack(sys, _mutex);
 
 
-	MemEntry *me = &_res->_memList[resNum];
+	MemEntry *me = &res->_memList[resNum];
 
 	if (me->valid == 1 && me->type == Resource::ResType::RT_MUSIC) {
 		_resNum = resNum;
@@ -82,7 +82,7 @@ void SfxPlayer::prepareInstruments(const uint8 *p) {
 		uint16 resNum = READ_BE_UINT16(p); p += 2;
 		if (resNum != 0) {
 			ins->volume = READ_BE_UINT16(p);
-			MemEntry *me = &_res->_memList[resNum];
+			MemEntry *me = &res->_memList[resNum];
 			if (me->valid == 1 && me->type == 0) {
 				ins->data = me->bufPtr;
 				memset(ins->data + 8, 0, 4);
@@ -97,22 +97,22 @@ void SfxPlayer::prepareInstruments(const uint8 *p) {
 
 void SfxPlayer::start() {
 	debug(DBG_SND, "SfxPlayer::start()");
-	MutexStack(_stub, _mutex);
+	MutexStack(sys, _mutex);
 	_sfxMod.curPos = 0;
-	_timerId = _stub->addTimer(_delay, eventsCallback, this);			
+	_timerId = sys->addTimer(_delay, eventsCallback, this);			
 }
 
 void SfxPlayer::stop() {
 	debug(DBG_SND, "SfxPlayer::stop()");
-	MutexStack(_stub, _mutex);
+	MutexStack(sys, _mutex);
 	if (_resNum != 0) {
 		_resNum = 0;
-		_stub->removeTimer(_timerId);
+		sys->removeTimer(_timerId);
 	}
 }
 
 void SfxPlayer::handleEvents() {
-	MutexStack(_stub, _mutex);
+	MutexStack(sys, _mutex);
 	uint8 order = _sfxMod.orderTable[_sfxMod.curOrder];
 	const uint8 *patternData = _sfxMod.data + _sfxMod.curPos + order * 1024;
 	for (uint8 ch = 0; ch < 4; ++ch) {
@@ -126,7 +126,7 @@ void SfxPlayer::handleEvents() {
 		order = _sfxMod.curOrder + 1;
 		if (order == _sfxMod.numOrder) {
 			_resNum = 0;
-			_stub->removeTimer(_timerId);
+			sys->removeTimer(_timerId);
 			mixer->stopAll();
 		}
 		_sfxMod.curOrder = order;
@@ -207,7 +207,7 @@ uint32 SfxPlayer::eventsCallback(uint32 interval, void *param) {
 }
 
 void SfxPlayer::saveOrLoad(Serializer &ser) {
-	_stub->lockMutex(_mutex);
+	sys->lockMutex(_mutex);
 	Serializer::Entry entries[] = {
 		SE_INT(&_delay, Serializer::SES_INT8, VER(2)),
 		SE_INT(&_resNum, Serializer::SES_INT16, VER(2)),
@@ -216,11 +216,11 @@ void SfxPlayer::saveOrLoad(Serializer &ser) {
 		SE_END()
 	};
 	ser.saveOrLoadEntries(entries);
-	_stub->unlockMutex(_mutex);
+	sys->unlockMutex(_mutex);
 	if (ser._mode == Serializer::SM_LOAD && _resNum != 0) {
 		uint16 delay = _delay;
 		loadSfxModule(_resNum, 0, _sfxMod.curOrder);
 		_delay = delay;
-		_timerId = _stub->addTimer(_delay, eventsCallback, this);
+		_timerId = sys->addTimer(_delay, eventsCallback, this);
 	}
 }

@@ -22,11 +22,13 @@
 #include "sys.h"
 
 
-void Polygon::init(const uint8 *p, uint16 zoom) {
+void Polygon::readVertices(const uint8 *p, uint16 zoom) {
 	bbw = (*p++) * zoom / 64;
 	bbh = (*p++) * zoom / 64;
 	numPoints = *p++;
 	assert((numPoints & 1) == 0 && numPoints < MAX_POINTS);
+
+	//Read all points, directly from bytecode segment
 	for (int i = 0; i < numPoints; ++i) {
 		Point *pt = &points[i];
 		pt->x = (*p++) * zoom / 64;
@@ -34,8 +36,8 @@ void Polygon::init(const uint8 *p, uint16 zoom) {
 	}
 }
 
-Video::Video(Resource *res, System *stub) 
-	: _res(res), _stub(stub) {
+Video::Video(Resource *resParameter, System *stub) 
+	: res(resParameter), sys(stub) {
 }
 
 void Video::init() {
@@ -63,39 +65,59 @@ void Video::setDataBuffer(uint8 *dataBuf, uint16 offset) {
 	_pData.pc = dataBuf + offset;
 }
 
-void Video::drawShape(uint8 color, uint16 zoom, const Point &pt) {
+/*
+     A shape can be given in two different ways:
+
+	 - A list of screenspace vertices.
+	 - A list of objectspace vertices, based on a delta from the first vertex.
+
+	 This is a recursive function. 
+*/
+
+void Video::readAndDrawPolygon(uint8 color, uint16 zoom, const Point &pt) {
 
 	uint8 i = _pData.fetchByte();
 
-	if (i >= 0xC0) {
+	//This is 
+	if (i >= 0xC0) {	// 0xc0 = 192
 
-		if (color & 0x80) {   //0x80 = 128
-			color = i & 0x3F; //0x3F =  63
+		// WTF ?
+		if (color & 0x80) {   //0x80 = 128 (1000 0000)
+			color = i & 0x3F; //0x3F =  63 (0011 1111)   
 		}
-		_pg.init(_pData.pc, zoom);
+
+
+		polygon.readVertices(_pData.pc, zoom);
+
 		fillPolygon(color, zoom, pt);
+
+#if TRACE_FRAMEBUFFER
+			dumpFrameBuffers();
+#endif
+
 	} else {
 		i &= 0x3F;  //0x3F = 63
 		if (i == 1) {
-			warning("Video::drawShape() ec=0x%X (i != 2)", 0xF80);
+			warning("Video::readAndDrawPolygon() ec=0x%X (i != 2)", 0xF80);
 		} else if (i == 2) {
-			drawShapeParts(zoom, pt);
+			readAndDrawPolygonHierarchy(zoom, pt);
 		} else {
-			warning("Video::drawShape() ec=0x%X (i != 2)", 0xFBB);
+			warning("Video::readAndDrawPolygon() ec=0x%X (i != 2)", 0xFBB);
 		}
 	}
 }
 
 void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
-	if (_pg.bbw == 0 && _pg.bbh == 1 && _pg.numPoints == 4) {
+
+	if (polygon.bbw == 0 && polygon.bbh == 1 && polygon.numPoints == 4) {
 		drawPoint(color, pt.x, pt.y);
 		return;
 	}
 	
-	int16 x1 = pt.x - _pg.bbw / 2;
-	int16 x2 = pt.x + _pg.bbw / 2;
-	int16 y1 = pt.y - _pg.bbh / 2;
-	int16 y2 = pt.y + _pg.bbh / 2;
+	int16 x1 = pt.x - polygon.bbw / 2;
+	int16 x2 = pt.x + polygon.bbw / 2;
+	int16 y1 = pt.y - polygon.bbh / 2;
+	int16 y2 = pt.y + polygon.bbh / 2;
 
 	if (x1 > 319 || x2 < 0 || y1 > 199 || y2 < 0)
 		return;
@@ -104,10 +126,10 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
 	
 	uint16 i, j;
 	i = 0;
-	j = _pg.numPoints - 1;
+	j = polygon.numPoints - 1;
 	
-	x2 = _pg.points[i].x + x1;
-	x1 = _pg.points[j].x + x1;
+	x2 = polygon.points[i].x + x1;
+	x1 = polygon.points[j].x + x1;
 
 	++i;
 	--j;
@@ -125,13 +147,13 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
 	uint32 cpt2 = x2 << 16;
 
 	while (1) {
-		_pg.numPoints -= 2;
-		if (_pg.numPoints == 0) {
+		polygon.numPoints -= 2;
+		if (polygon.numPoints == 0) {
 			return;
 		}
 		uint16 h;
-		int32 step1 = calcStep(_pg.points[j + 1], _pg.points[j], h);
-		int32 step2 = calcStep(_pg.points[i - 1], _pg.points[i], h);
+		int32 step1 = calcStep(polygon.points[j + 1], polygon.points[j], h);
+		int32 step2 = calcStep(polygon.points[i - 1], polygon.points[i], h);
 
 		++i;
 		--j;
@@ -162,27 +184,48 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
 	}
 }
 
-void Video::drawShapeParts(uint16 zoom, const Point &pgc) {
+/*
+    What is read from the bytecode is not a pure screnspace polygon but a polygonspace polygon.
+
+*/
+void Video::readAndDrawPolygonHierarchy(uint16 zoom, const Point &pgc) {
+
+	char nullChar;
+
 	Point pt(pgc);
 	pt.x -= _pData.fetchByte() * zoom / 64;
 	pt.y -= _pData.fetchByte() * zoom / 64;
-	int16 n = _pData.fetchByte();
-	debug(DBG_VIDEO, "Video::drawShapeParts n=%d", n);
-	for ( ; n >= 0; --n) {
+
+	int16 childs = _pData.fetchByte();
+	debug(DBG_VIDEO, "Video::readAndDrawPolygonHierarchy childs=%d", childs);
+
+	for ( ; childs >= 0; --childs) {
+
 		uint16 off = _pData.fetchWord();
+
 		Point po(pt);
 		po.x += _pData.fetchByte() * zoom / 64;
 		po.y += _pData.fetchByte() * zoom / 64;
+
 		uint16 color = 0xFF;
 		uint16 _bp = off;
 		off &= 0x7FFF;
+
 		if (_bp & 0x8000) {
 			color = *_pData.pc & 0x7F;
 			_pData.pc += 2;
 		}
+
 		uint8 *bak = _pData.pc;
 		_pData.pc = _dataBuf + off * 2;
-		drawShape(color, zoom, po);
+
+		
+		readAndDrawPolygon(color, zoom, po);
+
+		//FCS: Debug so I can see a hierarchy being draw step by step.
+		#if TRACE_FRAMEBUFFER
+			dumpFrameBuffers();
+		#endif
 		_pData.pc = bak;
 	}
 }
@@ -483,14 +526,22 @@ uint8 *Video::allocPage() {
 	return buf;
 }
 
-
+/*
+Note: The palette used to be allocated on the stack but I moved it to
+      the heap so I could dump the four framebuffer and follow how
+	  frames are generated.
+*/
+uint8 pal[NUM_COLORS * 3]; //3 = BYTES_PER_PIXEL
 void Video::changePal(uint8 palNum) {
 
 	if (palNum >= 32)
 		return;
 	
-	uint8 *p = _res->_segVideoPal + palNum * 32;
-	uint8 pal[NUM_COLORS * 3]; //3 = BYTES_PER_PIXEL
+	uint8 *p = res->_segVideoPal + palNum * 32;
+
+	// Moved to the heap, legacy code used to allocate the palette
+	// on the stack.
+	//uint8 pal[NUM_COLORS * 3]; //3 = BYTES_PER_PIXEL
 
 	for (int i = 0; i < NUM_COLORS; ++i) 
 	{
@@ -502,7 +553,7 @@ void Video::changePal(uint8 palNum) {
 		pal[i * 3 + 2] = ((c2 & 0x0F) >> 2) | ((c2 & 0x0F) << 2); // b
 	}
 
-	_stub->setPalette(0, NUM_COLORS, pal);
+	sys->setPalette(0, NUM_COLORS, pal);
 	currentPaletteId = palNum;
 	
 
@@ -529,7 +580,7 @@ void Video::updateDisplay(uint8 pageId) {
 	//Q: Why 160 ?
 	//A: Because one byte gives two palette indices so
 	//   we only need to move 320/2 per line.
-	_stub->copyRect(0, 0, 320, 200, _curPagePtr2, 160);
+	sys->copyRect(0, 0, 320, 200, _curPagePtr2, 160);
 }
 
 void Video::saveOrLoad(Serializer &ser) {
@@ -563,3 +614,69 @@ void Video::saveOrLoad(Serializer &ser) {
 		changePal(currentPaletteId);
 	}
 }
+
+
+
+#if TRACE_FRAMEBUFFER
+int traceFrameBufferCounter=0;
+uint8 allFrameBuffers[640*400*3];
+
+void writeLine(uint8 *src,uint8 *dst,int size)
+{
+	for( uint8 twoPixels = 0 ; twoPixels < size ; twoPixels++)
+	{
+		int pixelIndex0 = (src[size] & 0xF0) >> 4;
+		int pixelIndex1 = (src[size] & 0xF);
+
+		//We need to write those two pixels
+		dst[0] = pal[pixelIndex0*3];
+		dst[1] = pal[pixelIndex0*3+1];
+		dst[2] = pal[pixelIndex0*3+2];
+		dst+=3;
+
+		dst[0] = pal[pixelIndex1*3];
+		dst[1] = pal[pixelIndex1*3+1];
+		dst[2] = pal[pixelIndex1*3+2];
+		dst+=3;
+
+	}
+}
+
+void dumpFrameBuffer(uint8 *src,uint8 *dst, int x,int y)
+{
+
+	for (int line=0 ; line < 200 ; line++)
+	{
+		writeLine(dst + x + y*320  ,src+line*160,160);
+		dst+= 320;
+	}
+}
+
+void Video::dumpFrameBuffers()
+{
+	
+	if (!traceFrameBufferCounter)
+		memset(allFrameBuffers,0,sizeof(allFrameBuffers));
+
+	int frameId = traceFrameBufferCounter++;
+
+	int x_offset;
+	int y_offset;
+    
+	x_offset=0;
+	y_offset=0;
+	dumpFrameBuffer(_curPagePtr1,allFrameBuffers,x_offset,y_offset);
+
+	x_offset=320;
+	y_offset=0;
+	dumpFrameBuffer(_curPagePtr2,allFrameBuffers,x_offset,y_offset);
+
+	x_offset=0;
+	y_offset=200;
+	dumpFrameBuffer(_curPagePtr3,allFrameBuffers,x_offset,y_offset);
+
+	//Write bitmap to disk.
+}
+
+
+#endif

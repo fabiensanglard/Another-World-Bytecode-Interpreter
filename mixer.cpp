@@ -33,19 +33,19 @@ static int8 addclamp(int a, int b) {
 }
 
 Mixer::Mixer(System *stub) 
-	: _stub(stub) {
+	: sys(stub) {
 }
 
 void Mixer::init() {
 	memset(_channels, 0, sizeof(_channels));
-	_mutex = _stub->createMutex();
-	_stub->startAudio(Mixer::mixCallback, this);
+	_mutex = sys->createMutex();
+	sys->startAudio(Mixer::mixCallback, this);
 }
 
 void Mixer::free() {
 	stopAll();
-	_stub->stopAudio();
-	_stub->destroyMutex(_mutex);
+	sys->stopAudio();
+	sys->destroyMutex(_mutex);
 }
 
 void Mixer::playChannel(uint8 channel, const MixerChunk *mc, uint16 freq, uint8 volume) {
@@ -53,13 +53,13 @@ void Mixer::playChannel(uint8 channel, const MixerChunk *mc, uint16 freq, uint8 
 	assert(channel < AUDIO_NUM_CHANNELS);
 
 	// The mutex is acquired in the constructor
-	MutexStack(_stub, _mutex);
+	MutexStack(sys, _mutex);
 	MixerChannel *ch = &_channels[channel];
 	ch->active = true;
 	ch->volume = volume;
 	ch->chunk = *mc;
 	ch->chunkPos = 0;
-	ch->chunkInc = (freq << 8) / _stub->getOutputSampleRate();
+	ch->chunkInc = (freq << 8) / sys->getOutputSampleRate();
 
 	//At the end of the scope the MutexStack destructor is called and the mutex is released. 
 }
@@ -67,20 +67,20 @@ void Mixer::playChannel(uint8 channel, const MixerChunk *mc, uint16 freq, uint8 
 void Mixer::stopChannel(uint8 channel) {
 	debug(DBG_SND, "Mixer::stopChannel(%d)", channel);
 	assert(channel < AUDIO_NUM_CHANNELS);
-	MutexStack(_stub, _mutex);	
+	MutexStack(sys, _mutex);	
 	_channels[channel].active = false;
 }
 
 void Mixer::setChannelVolume(uint8 channel, uint8 volume) {
 	debug(DBG_SND, "Mixer::setChannelVolume(%d, %d)", channel, volume);
 	assert(channel < AUDIO_NUM_CHANNELS);
-	MutexStack(_stub, _mutex);
+	MutexStack(sys, _mutex);
 	_channels[channel].volume = volume;
 }
 
 void Mixer::stopAll() {
 	debug(DBG_SND, "Mixer::stopAll()");
-	MutexStack(_stub, _mutex);
+	MutexStack(sys, _mutex);
 	for (uint8 i = 0; i < AUDIO_NUM_CHANNELS; ++i) {
 		_channels[i].active = false;		
 	}
@@ -94,7 +94,7 @@ void Mixer::stopAll() {
 // of this method.
 void Mixer::mix(int8 *buf, int len) {
 
-	MutexStack(_stub, _mutex);
+	MutexStack(sys, _mutex);
 
 	//Clear the buffer since nothing garanty we are receiving clean memory.
 	memset(buf, 0, len);
@@ -145,7 +145,7 @@ void Mixer::mixCallback(void *param, uint8 *buf, int len) {
 }
 
 void Mixer::saveOrLoad(Serializer &ser) {
-	_stub->lockMutex(_mutex);
+	sys->lockMutex(_mutex);
 	for (int i = 0; i < AUDIO_NUM_CHANNELS; ++i) {
 		MixerChannel *ch = &_channels[i];
 		Serializer::Entry entries[] = {
@@ -161,5 +161,5 @@ void Mixer::saveOrLoad(Serializer &ser) {
 		};
 		ser.saveOrLoadEntries(entries);
 	}
-	_stub->unlockMutex(_mutex);
+	sys->unlockMutex(_mutex);
 };

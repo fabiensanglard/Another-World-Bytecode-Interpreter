@@ -54,6 +54,16 @@ struct SfxPlayer;
 struct System;
 struct Video;
 
+//For threadsData navigation
+#define PC_OFFSET 0
+#define REQUESTED_PC_OFFSET 1
+#define NUM_DATA_FIELDS 2
+
+//For vmIsChannelActive navigation
+#define CURR_STATE 0
+#define REQUESTED_STATE 1
+#define NUM_THREAD_FIELDS 2
+
 struct VirtualMachine {
 
 	// The type of entries in opcodeTable. This allows "fast" branching
@@ -64,10 +74,10 @@ struct VirtualMachine {
 	static const uint16 frequenceTable[];
 
 	Mixer *mixer;
-	Resource *_res;
+	Resource *res;
 	SfxPlayer *player;
 	Video *video;
-	System *_stub;
+	System *sys;
 
 
 
@@ -77,14 +87,15 @@ struct VirtualMachine {
 	uint16 _scriptStackCalls[VM_NUM_THREADS];
 
     
-	uint16 _scriptSlotsPos[2][VM_NUM_THREADS];
+	uint16 threadsData[NUM_DATA_FIELDS][VM_NUM_THREADS];
 	// This array is used: 
 	//     0 to save the channel's instruction pointer 
 	//     when the channel release control (this happens on a break).
+
 	//     1 When a setVec is requested for the next vm frame.
 
 
-	uint8 vmChannelPaused[2][VM_NUM_THREADS];
+	uint8 vmIsChannelActive[NUM_THREAD_FIELDS][VM_NUM_THREADS];
 
 
 
@@ -113,9 +124,9 @@ struct VirtualMachine {
 	void op_condJmp();
 	void op_setPalette();
 	void op_resetThread();
-	void op_selectPage();
-	void op_fillPage();
-	void op_copyPage();
+	void op_selectVideoPage();
+	void op_fillVideoPage();
+	void op_copyVideoPage();
 	void op_blitFramebuffer();
 	void op_halt();	
 	void op_drawString();
@@ -130,9 +141,9 @@ struct VirtualMachine {
 
 	void initForPart(uint16 partId);
 	void setupPart(uint16 partId);
-	void setupScripts();
+	void checkThreadRequests();
 	void hostFrame();
-	void executeScript();
+	void executeThread();
 
 	void inp_updatePlayer();
 	void inp_handleSpecialKeys();
@@ -141,6 +152,7 @@ struct VirtualMachine {
 	void snd_playMusic(uint16 resNum, uint16 delay, uint8 pos);
 	
 	void saveOrLoad(Serializer &ser);
+	void bypassProtection();
 };
 
 #endif
