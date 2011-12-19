@@ -72,7 +72,7 @@ struct Resource {
 	};
 	
 	enum {
-		MEM_BLOCK_SIZE = 600 * 1024   //600kb total memory consumed (not taking into account stack and heap
+		MEM_BLOCK_SIZE = 600 * 1024   //600kb total memory consumed (not taking into account stack and static heap)
 	};
 	
 	
@@ -84,16 +84,16 @@ struct Resource {
 	uint8 *_memPtrStart, *_scriptBakPtr, *_scriptCurPtr, *_vidBakPtr, *_vidCurPtr;
 	bool _useSegVideo2;
 
-	uint8 *_segVideoPal;
-	uint8 *_segCode;
-	uint8 *_segVideo1;
+	uint8 *segPalette;
+	uint8 *segBytecode;
+	uint8 *segCinematic;
 	uint8 *_segVideo2;
 
 	Resource(Video *vid, const char *dataDir);
 	
 	void readBank(const MemEntry *me, uint8 *dstBuf);
 	void readEntries();
-	void load();
+	void loadMarkedAsNeeded();
 	void invalidateAll();
 	void invalidateRes();	
 	void loadPartsOrMemoryEntry(uint16 num);

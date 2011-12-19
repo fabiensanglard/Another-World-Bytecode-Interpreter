@@ -69,6 +69,10 @@ struct Video {
 	uint8 paletteIdRequested, currentPaletteId;
 	uint8 *_pagePtrs[4];
 
+	// I am almost sure that:
+	// _curPagePtr1 is the backbuffer 
+	// _curPagePtr2 is the frontbuffer
+	// _curPagePtr3 is the background builder.
 	uint8 *_curPagePtr1, *_curPagePtr2, *_curPagePtr3;
 
 	Polygon polygon;
@@ -92,7 +96,7 @@ struct Video {
 	void drawString(uint8 color, uint16 x, uint16 y, uint16 strId);
 	void drawChar(uint8 c, uint16 x, uint16 y, uint8 color, uint8 *buf);
 	void drawPoint(uint8 color, int16 x, int16 y);
-	void drawLineT(int16 x1, int16 x2, uint8 color);
+	void drawLineBlend(int16 x1, int16 x2, uint8 color);
 	void drawLineN(int16 x1, int16 x2, uint8 color);
 	void drawLineP(int16 x1, int16 x2, uint8 color);
 	uint8 *getPagePtr(uint8 page);

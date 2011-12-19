@@ -63,7 +63,7 @@ void VirtualMachine::op_add() {
 }
 
 void VirtualMachine::op_addConst() {
-	if (res->currentPartId == 0x3E86 && _scriptPtr.pc == res->_segCode + 0x6D48) {
+	if (res->currentPartId == 0x3E86 && _scriptPtr.pc == res->segBytecode + 0x6D48) {
 		warning("VirtualMachine::op_addConst() hack for non-stop looping gun sound bug");
 		// the script 0x27 slot 0x17 doesn't stop the gun sound from looping, I 
 		// don't really know why ; for now, let's play the 'stopping sound' like 
@@ -85,12 +85,12 @@ void VirtualMachine::op_call() {
 	uint8 sp = _stackPtr;
 
 	debug(DBG_VM, "VirtualMachine::op_call(0x%X)", offset);
-	_scriptStackCalls[sp] = _scriptPtr.pc - res->_segCode;
+	_scriptStackCalls[sp] = _scriptPtr.pc - res->segBytecode;
 	if (_stackPtr == 0xFF) {
 		error("VirtualMachine::op_call() ec=0x%X stack overflow", 0x8F);
 	}
 	++_stackPtr;
-	_scriptPtr.pc = res->_segCode + offset ;
+	_scriptPtr.pc = res->segBytecode + offset ;
 }
 
 void VirtualMachine::op_ret() {
@@ -100,7 +100,7 @@ void VirtualMachine::op_ret() {
 	}	
 	--_stackPtr;
 	uint8 sp = _stackPtr;
-	_scriptPtr.pc = res->_segCode + _scriptStackCalls[sp];
+	_scriptPtr.pc = res->segBytecode + _scriptStackCalls[sp];
 }
 
 void VirtualMachine::op_break() {
@@ -111,7 +111,7 @@ void VirtualMachine::op_break() {
 void VirtualMachine::op_jmp() {
 	uint16 pcOffset = _scriptPtr.fetchWord();
 	debug(DBG_VM, "VirtualMachine::op_jmp(0x%02X)", pcOffset);
-	_scriptPtr.pc = res->_segCode + pcOffset;	
+	_scriptPtr.pc = res->segBytecode + pcOffset;	
 }
 
 void VirtualMachine::op_setSetVect() {
@@ -135,11 +135,11 @@ void VirtualMachine::op_jnz() {
 #define BYPASS_PROTECTION
 void VirtualMachine::op_condJmp() {
 	
-	//printf("Jump : %X \n",_scriptPtr.pc-res->_segCode);
+	//printf("Jump : %X \n",_scriptPtr.pc-res->segBytecode);
 //FCS Whoever wrote this is patching the bytecode on the fly. This is ballzy !!
 #ifdef BYPASS_PROTECTION
 	
-	if (res->currentPartId == GAME_PART_FIRST && _scriptPtr.pc == res->_segCode + 0xCB9) {
+	if (res->currentPartId == GAME_PART_FIRST && _scriptPtr.pc == res->segBytecode + 0xCB9) {
 		/*
 		// (0x0CB8) condJmp(0x80, VAR(41), VAR(30), 0xCD3)
 		*(_scriptPtr.pc + 0x00) = 0x81;
@@ -306,7 +306,7 @@ void VirtualMachine::op_blitFramebuffer() {
 
 void VirtualMachine::op_halt() {
 	debug(DBG_VM, "VirtualMachine::op_halt()");
-	_scriptPtr.pc = res->_segCode + 0xFFFF;
+	_scriptPtr.pc = res->segBytecode + 0xFFFF;
 	_scriptHalted = true;
 }
 
@@ -461,7 +461,7 @@ void VirtualMachine::hostFrame() {
 			// Set the script pointer to the right location.
 			// script pc is used in executeThread in order
 			// to get the next opcode.
-			_scriptPtr.pc = res->_segCode + n;
+			_scriptPtr.pc = res->segBytecode + n;
 			_stackPtr = 0;
 
 			_scriptHalted = false;
@@ -469,7 +469,7 @@ void VirtualMachine::hostFrame() {
 			executeThread();
 
 			//Since .pc is going to be modified by this next loop iteration, we need to save it.
-			threadsData[PC_OFFSET][threadId] = _scriptPtr.pc - res->_segCode;
+			threadsData[PC_OFFSET][threadId] = _scriptPtr.pc - res->segBytecode;
 
 
 			debug(DBG_VM, "VirtualMachine::hostFrame() i=0x%02X pos=0x%X", threadId, threadsData[0][threadId]);
@@ -504,7 +504,9 @@ void VirtualMachine::executeThread() {
 			}
 			debug(DBG_VIDEO, "vid_opcd_0x80 : opcode=0x%X off=0x%X x=%d y=%d", opcode, off, x, y);
 
-			video->setDataBuffer(res->_segVideo1, off);
+			// This switch the polygon database to "cinematic" and probably draws a black polygon
+			// over all the screen.
+			video->setDataBuffer(res->segCinematic, off);
 			video->readAndDrawPolygon(COLOR_BLACK, DEFAULT_ZOOM, Point(x,y));
 
 			continue;
@@ -570,7 +572,7 @@ void VirtualMachine::executeThread() {
 				}
 			}
 			debug(DBG_VIDEO, "vid_opcd_0x40 : off=0x%X x=%d y=%d", off, x, y);
-			video->setDataBuffer(res->_useSegVideo2 ? res->_segVideo2 : res->_segVideo1, off);
+			video->setDataBuffer(res->_useSegVideo2 ? res->_segVideo2 : res->segCinematic, off);
 			video->readAndDrawPolygon(0xFF, zoom, Point(x, y));
 
 			continue;

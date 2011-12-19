@@ -105,7 +105,7 @@ struct VirtualMachine {
 
 	Ptr _scriptPtr;
 	uint8 _stackPtr;
-	bool _scriptHalted;
+	bool gotoNextThread;
 	bool _fastMode;
 
 	VirtualMachine(Mixer *mix, Resource *res, SfxPlayer *ply, Video *vid, System *stub);
@@ -117,7 +117,7 @@ struct VirtualMachine {
 	void op_addConst();
 	void op_call();
 	void op_ret();
-	void op_break();
+	void op_pauseThread();
 	void op_jmp();
 	void op_setSetVect();
 	void op_jnz();
@@ -128,7 +128,7 @@ struct VirtualMachine {
 	void op_fillVideoPage();
 	void op_copyVideoPage();
 	void op_blitFramebuffer();
-	void op_halt();	
+	void op_killThread();	
 	void op_drawString();
 	void op_sub();
 	void op_and();

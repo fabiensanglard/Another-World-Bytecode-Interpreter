@@ -138,6 +138,9 @@ int main(int argc, char *argv[]) {
 	   30 something opcode. The graphic opcode are more complex, not only the declare the operation to perform
 	   they also define where to find the vertices (segVideo1 or segVideo2).
 
+	   No stack available but a thread can save its pc (Program Counter) once: One method call and return is possible.
+
+
    Video :
    =======
 	   Double buffer architecture. AW optcodes even has a special instruction for blitting from one
@@ -257,6 +260,15 @@ int main(int argc, char *argv[]) {
 
    There is 0 malloc during the game. All resources are loaded in one big buffer (Resource::load).
    The entire buffer is "freed" at the end of a game part.
+
+
+   The renderer is actually capable of Blending a new poly in the framebuffer (Video::drawLineT)
+
+
+   	// I am almost sure that:
+	// _curPagePtr1 is the backbuffer 
+	// _curPagePtr2 is the frontbuffer
+	// _curPagePtr3 is the background builder.
 
 
    RETARTED :

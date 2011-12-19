@@ -119,7 +119,7 @@ void Resource::readEntries() {
 	Go over every resource and check if they are marked at "MEMENTRY_STATE_LOAD_ME".
 	Load them in memory and mark them are MEMENTRY_STATE_LOADED
 */
-void Resource::load() {
+void Resource::loadMarkedAsNeeded() {
 
 	while (1) {
 		
@@ -211,12 +211,16 @@ void Resource::invalidateAll() {
 void Resource::loadPartsOrMemoryEntry(uint16 resourceId) {
 
 	if (resourceId > _numMemList) {
+
 		requestedNextPart = resourceId;
+
 	} else {
+
 		MemEntry *me = &_memList[resourceId];
+
 		if (me->state == MEMENTRY_STATE_NOT_NEEDED) {
 			me->state = MEMENTRY_STATE_LOAD_ME;
-			load();
+			loadMarkedAsNeeded();
 		}
 	}
 
@@ -243,22 +247,27 @@ void Resource::setupPart(uint16 partId) {
 	uint8 video1Index  = memListParts[memListPartIndex][MEMLIST_PART_VIDEO1];
 	uint8 video2Index  = memListParts[memListPartIndex][MEMLIST_PART_VIDEO2];
 
+	// Mark all resources as located on harddrive.
 	invalidateAll();
 
 	_memList[palleteIndex].state = 2;
 	_memList[codeIndex].state = 2;
 	_memList[video1Index].state = 2;
 
+	// This is probably a cinematic or a non interactive part of the game.
+	// Player and enemy polygons are not needed.
 	if (video2Index != MEMLIST_PART_NONE) 
 		_memList[video2Index].state = 2;
 	
 
-	load();
+	loadMarkedAsNeeded();
 
-	_segVideoPal = _memList[palleteIndex].bufPtr;
-	_segCode     = _memList[codeIndex].bufPtr;
-	_segVideo1   = _memList[video1Index].bufPtr;
+	segPalette = _memList[palleteIndex].bufPtr;
+	segBytecode     = _memList[codeIndex].bufPtr;
+	segCinematic   = _memList[video1Index].bufPtr;
 
+	// This is probably a cinematic or a non interactive part of the game.
+	// Player and enemy polygons are not needed.
 	if (video2Index != MEMLIST_PART_NONE) 
 		_segVideo2 = _memList[video2Index].bufPtr;
 	
@@ -273,7 +282,7 @@ void Resource::setupPart(uint16 partId) {
 void Resource::allocMemBlock() {
 	_memPtrStart = (uint8 *)malloc(MEM_BLOCK_SIZE);
 	_scriptBakPtr = _scriptCurPtr = _memPtrStart;
-	_vidBakPtr = _vidCurPtr = _memPtrStart + MEM_BLOCK_SIZE - 0x800 * 16;
+	_vidBakPtr = _vidCurPtr = _memPtrStart + MEM_BLOCK_SIZE - 0x800 * 16; //0x800 = 2048, so we have 32KB free for vidBack and vidCur
 	_useSegVideo2 = false;
 }
 
@@ -315,9 +324,9 @@ void Resource::saveOrLoad(Serializer &ser) {
 		SE_PTR(&_vidBakPtr, VER(1)),
 		SE_PTR(&_vidCurPtr, VER(1)),
 		SE_INT(&_useSegVideo2, Serializer::SES_BOOL, VER(1)),
-		SE_PTR(&_segVideoPal, VER(1)),
-		SE_PTR(&_segCode, VER(1)),
-		SE_PTR(&_segVideo1, VER(1)),
+		SE_PTR(&segPalette, VER(1)),
+		SE_PTR(&segBytecode, VER(1)),
+		SE_PTR(&segCinematic, VER(1)),
 		SE_PTR(&_segVideo2, VER(1)),
 		SE_END()
 	};

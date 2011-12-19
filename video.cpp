@@ -51,6 +51,7 @@ void Video::init() {
 	_curPagePtr3 = getPagePtr(1);
 	_curPagePtr2 = getPagePtr(2);
 
+
 	changePagePtr1(0xFE);
 
 	_interpTable[0] = 0x4000;
@@ -60,11 +61,13 @@ void Video::init() {
 	}
 }
 
+/*
+	This
+*/
 void Video::setDataBuffer(uint8 *dataBuf, uint16 offset) {
 
 	_dataBuf = dataBuf;
 	_pData.pc = dataBuf + offset;
-
 }
 
 
@@ -86,12 +89,13 @@ void Video::readAndDrawPolygon(uint8 color, uint16 zoom, const Point &pt) {
 			color = i & 0x3F; //0x3F =  63 (0011 1111)   
 		}
 
-
+		// pc is misleading here since we are not reading bytecode but only
+		// vertices informations.
 		polygon.readVertices(_pData.pc, zoom);
 
 		fillPolygon(color, zoom, pt);
 #if TRACE_FRAMEBUFFER
-			//dumpFrameBuffers();
+		//	dumpFrameBuffers();
 #endif
 
 
@@ -119,6 +123,9 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
 
 	if (polygon.bbw == 0 && polygon.bbh == 1 && polygon.numPoints == 4) {
 		drawPoint(color, pt.x, pt.y);
+#if TRACE_FRAMEBUFFER
+			//dumpFrameBuffers();
+#endif
 		return;
 	}
 	
@@ -148,7 +155,7 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
 	} else if (color > 0x10) {
 		drawFct = &Video::drawLineP;
 	} else {
-		drawFct = &Video::drawLineT;
+		drawFct = &Video::drawLineBlend;
 	}
 
 	uint32 cpt1 = x1 << 16;
@@ -190,7 +197,16 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
 				if (_hliney > 199) break;
 			}
 		}
+
+		#if TRACE_FRAMEBUFFER
+				dumpFrameBuffers();
+		#endif
 	}
+
+
+
+
+
 }
 
 /*
@@ -228,14 +244,16 @@ void Video::readAndDrawPolygonHierarchy(uint16 zoom, const Point &pgc) {
 		uint8 *bak = _pData.pc;
 		_pData.pc = _dataBuf + off * 2;
 
-		
+
 		readAndDrawPolygon(color, zoom, po);
 
 
 		_pData.pc = bak;
 	}
 
-
+			#if TRACE_FRAMEBUFFER
+		//	dumpFrameBuffers();
+#endif
 }
 
 int32 Video::calcStep(const Point &p1, const Point &p2, uint16 &dy) {
@@ -335,8 +353,10 @@ void Video::drawPoint(uint8 color, int16 x, int16 y) {
 	}
 }
 
-void Video::drawLineT(int16 x1, int16 x2, uint8 color) {
-	debug(DBG_VIDEO, "drawLineT(%d, %d, %d)", x1, x2, color);
+/* Blend a line in the current framebuffer (_curPagePtr1)
+*/
+void Video::drawLineBlend(int16 x1, int16 x2, uint8 color) {
+	debug(DBG_VIDEO, "drawLineBlend(%d, %d, %d)", x1, x2, color);
 	int16 xmax = MAX(x1, x2);
 	int16 xmin = MIN(x1, x2);
 	uint8 *p = _curPagePtr1 + _hliney * 160 + xmin / 2;
@@ -365,6 +385,10 @@ void Video::drawLineT(int16 x1, int16 x2, uint8 color) {
 		*p = (*p & cmaske) | 0x80;
 		++p;
 	}
+
+	#if TRACE_FRAMEBUFFER
+	//	dumpFrameBuffers();
+#endif
 }
 
 void Video::drawLineN(int16 x1, int16 x2, uint8 color) {
@@ -397,6 +421,10 @@ void Video::drawLineN(int16 x1, int16 x2, uint8 color) {
 		*p = (*p & cmaske) | (colb & 0xF0);
 		++p;		
 	}
+
+		#if TRACE_FRAMEBUFFER
+		//dumpFrameBuffers();
+#endif
 }
 
 void Video::drawLineP(int16 x1, int16 x2, uint8 color) {
@@ -432,6 +460,10 @@ void Video::drawLineP(int16 x1, int16 x2, uint8 color) {
 		++p;
 		++q;
 	}
+
+		#if TRACE_FRAMEBUFFER
+			//dumpFrameBuffers();
+#endif
 }
 
 uint8 *Video::getPagePtr(uint8 page) {
@@ -476,12 +508,12 @@ void Video::fillPage(uint8 pageId, uint8 color) {
 	memset(p, c, VID_PAGE_SIZE);
 
 #if TRACE_FRAMEBUFFER
-			//dumpFrameBuffers();
+	//		dumpFrameBuffers();
 #endif
 }
 
-// This is the opcode to blitz backbuffer to front buffer.
-// This opcode should be followed by a screen refresh
+/*  This opcode is used once the background of a scene has been drawn in one of the framebuffer:
+	   it is copied in the current framebuffer at the start of a new frame in order to improve performances. */
 void Video::copyPage(uint8 srcPageId, uint8 dstPageId, int16 vscroll) {
 
 	debug(DBG_VIDEO, "Video::copyPage(%d, %d)", srcPageId, dstPageId);
@@ -564,7 +596,7 @@ void Video::changePal(uint8 palNum) {
 	if (palNum >= 32)
 		return;
 	
-	uint8 *p = res->_segVideoPal + palNum * 32;
+	uint8 *p = res->segPalette + palNum * 32;
 
 	// Moved to the heap, legacy code used to allocate the palette
 	// on the stack.
