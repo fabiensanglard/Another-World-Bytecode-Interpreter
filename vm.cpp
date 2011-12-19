@@ -103,9 +103,9 @@ void VirtualMachine::op_ret() {
 	_scriptPtr.pc = res->segBytecode + _scriptStackCalls[sp];
 }
 
-void VirtualMachine::op_break() {
-	debug(DBG_VM, "VirtualMachine::op_break()");
-	_scriptHalted = true;
+void VirtualMachine::op_pauseThread() {
+	debug(DBG_VM, "VirtualMachine::op_pauseThread()");
+	gotoNextThread = true;
 }
 
 void VirtualMachine::op_jmp() {
@@ -304,10 +304,10 @@ void VirtualMachine::op_blitFramebuffer() {
 	video->updateDisplay(pageId);
 }
 
-void VirtualMachine::op_halt() {
-	debug(DBG_VM, "VirtualMachine::op_halt()");
+void VirtualMachine::op_killThread() {
+	debug(DBG_VM, "VirtualMachine::op_killThread()");
 	_scriptPtr.pc = res->segBytecode + 0xFFFF;
-	_scriptHalted = true;
+	gotoNextThread = true;
 }
 
 void VirtualMachine::op_drawString() {
@@ -397,6 +397,7 @@ void VirtualMachine::initForPart(uint16 partId) {
 
 	res->setupPart(partId);
 
+	//Set all thread to inactive (pc at 0xFFFF or 0xFFFE )
 	memset((uint8 *)threadsData, 0xFF, sizeof(threadsData));
 
 
@@ -464,7 +465,7 @@ void VirtualMachine::hostFrame() {
 			_scriptPtr.pc = res->segBytecode + n;
 			_stackPtr = 0;
 
-			_scriptHalted = false;
+			gotoNextThread = false;
 			debug(DBG_VM, "VirtualMachine::hostFrame() i=0x%02X n=0x%02X *p=0x%02X", threadId, n, *_scriptPtr.pc);
 			executeThread();
 
@@ -487,7 +488,7 @@ void VirtualMachine::hostFrame() {
 
 void VirtualMachine::executeThread() {
 
-	while (!_scriptHalted) {
+	while (!gotoNextThread) {
 		uint8 opcode = _scriptPtr.fetchByte();
 
 		// 1000 0000 is set

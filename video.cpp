@@ -44,8 +44,16 @@ void Video::init() {
 
 	paletteIdRequested = NO_PALETTE_CHANGE_REQUESTED;
 
+	uint8* tmp = (uint8 *)malloc(4*VID_PAGE_SIZE);
+	memset(tmp,0,4*VID_PAGE_SIZE);
+	
+	/*
 	for (int i = 0; i < 4; ++i) {
 		_pagePtrs[i] = allocPage();
+	}
+	*/
+	for (int i = 0; i < 4; ++i) {
+		_pagePtrs[i] = tmp + i * VID_PAGE_SIZE;
 	}
 
 	_curPagePtr3 = getPagePtr(1);
@@ -164,7 +172,9 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
 	while (1) {
 		polygon.numPoints -= 2;
 		if (polygon.numPoints == 0) {
-
+#if TRACE_FRAMEBUFFER
+				dumpFrameBuffers("fillPolygonEnd");
+		#endif
 			break;
 		}
 		uint16 h;
@@ -199,7 +209,7 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
 		}
 
 		#if TRACE_FRAMEBUFFER
-				dumpFrameBuffers();
+				dumpFrameBuffers("fillPolygonChild");
 		#endif
 	}
 
@@ -423,7 +433,7 @@ void Video::drawLineN(int16 x1, int16 x2, uint8 color) {
 	}
 
 		#if TRACE_FRAMEBUFFER
-		//dumpFrameBuffers();
+	//	dumpFrameBuffers();
 #endif
 }
 
@@ -462,7 +472,7 @@ void Video::drawLineP(int16 x1, int16 x2, uint8 color) {
 	}
 
 		#if TRACE_FRAMEBUFFER
-			//dumpFrameBuffers();
+	//		dumpFrameBuffers();
 #endif
 }
 
@@ -508,7 +518,7 @@ void Video::fillPage(uint8 pageId, uint8 color) {
 	memset(p, c, VID_PAGE_SIZE);
 
 #if TRACE_FRAMEBUFFER
-	//		dumpFrameBuffers();
+			dumpFrameBuffers("-fillPage");
 #endif
 }
 
@@ -521,14 +531,17 @@ void Video::copyPage(uint8 srcPageId, uint8 dstPageId, int16 vscroll) {
 	if (srcPageId == dstPageId)
 		return;
 
+	uint8 *p;
+	uint8 *q;
+
 	if (srcPageId >= 0xFE || !((srcPageId &= 0xBF) & 0x80)) {
-		uint8 *p = getPagePtr(srcPageId);
-		uint8 *q = getPagePtr(dstPageId);
+		p = getPagePtr(srcPageId);
+		q = getPagePtr(dstPageId);
 		memcpy(q, p, VID_PAGE_SIZE);
 			
 	} else {
-		uint8 *p = getPagePtr(srcPageId & 3);
-		uint8 *q = getPagePtr(dstPageId);
+		p = getPagePtr(srcPageId & 3);
+		q = getPagePtr(dstPageId);
 		if (vscroll >= -199 && vscroll <= 199) {
 			uint16 h = 200;
 			if (vscroll < 0) {
@@ -542,11 +555,17 @@ void Video::copyPage(uint8 srcPageId, uint8 dstPageId, int16 vscroll) {
 		}
 	}
 
-
-#if TRACE_FRAMEBUFFER
-	//		dumpFrameBuffers();
-#endif
+	
+	#if TRACE_FRAMEBUFFER
+	char name[256];
+	memset(name,0,sizeof(name));
+	sprintf(name,"copyPage_0x%X_to_0x%X",(p-_pagePtrs[0])/VID_PAGE_SIZE,(q-_pagePtrs[0])/VID_PAGE_SIZE);
+	dumpFrameBuffers(name);
+	#endif
 }
+
+
+
 
 void Video::copyPagePtr(const uint8 *src) {
 	debug(DBG_VIDEO, "Video::copyPagePtr()");
@@ -579,11 +598,13 @@ void Video::copyPagePtr(const uint8 *src) {
 #endif
 }
 
+/*
 uint8 *Video::allocPage() {
 	uint8 *buf = (uint8 *)malloc(VID_PAGE_SIZE);
 	memset(buf, 0, VID_PAGE_SIZE);
 	return buf;
 }
+*/
 
 /*
 Note: The palette used to be allocated on the stack but I moved it to
@@ -614,6 +635,11 @@ void Video::changePal(uint8 palNum) {
 
 	sys->setPalette(0, NUM_COLORS, pal);
 	currentPaletteId = palNum;
+
+
+	#if TRACE_FRAMEBUFFER
+//	printf("")
+	#endif
 }
 
 void Video::updateDisplay(uint8 pageId) {
@@ -765,7 +791,26 @@ int GL_FCS_SaveAsSpecifiedPNG(char* path, uint8* pixels, int depth=8, int format
 #define SCREENSHOT_BPP 3
 int traceFrameBufferCounter=0;
 uint8 allFrameBuffers[640*400*SCREENSHOT_BPP];
-uint8 *fb1,*fb2,*fb3;
+
+uint8 dumpPalette[48] = {
+ 0x0, 0x0, 0x0,
+ 0x22, 0x0, 0x0,
+ 0x4, 0x8, 0x11,
+ 0x4, 0xC, 0x15,
+ 0x8, 0x11, 0x19,
+ 0xC, 0x15, 0x1D,
+ 0x15, 0x1D, 0x26,
+ 0x1D, 0x2A, 0x2E,
+ 0x1D, 0x1D, 0x1D,
+ 0x15, 0x15, 0x15,
+ 0xC, 0x8, 0xC,
+ 0x11, 0x11, 0x15,
+ 0x1D, 0x15, 0x15,
+ 0x15, 0x0, 0x0,
+ 0x0, 0x4, 0xC,
+ 0x3F, 0x3F, 0x2A,
+
+};
 /*
 uint8 dumpPalette[48] = {
  0x14, 0x14, 0x14,
@@ -798,15 +843,15 @@ void writeLine(uint8 *dst,uint8 *src,int size)
 		pixelIndex1 &= 0x10 -1;
 
 		//We need to write those two pixels
-		dst[0] = pal[pixelIndex0*3] << 2 | pal[pixelIndex0*3];
-		dst[1] = pal[pixelIndex0*3+1] << 2 | pal[pixelIndex0*3+1];
-		dst[2] = pal[pixelIndex0*3+2] << 2 | pal[pixelIndex0*3+2];
+		dst[0] = dumpPalette[pixelIndex0*3] << 2 | dumpPalette[pixelIndex0*3];
+		dst[1] = dumpPalette[pixelIndex0*3+1] << 2 | dumpPalette[pixelIndex0*3+1];
+		dst[2] = dumpPalette[pixelIndex0*3+2] << 2 | dumpPalette[pixelIndex0*3+2];
 		//dst[3] = 0xFF;
 		dst+=SCREENSHOT_BPP;
 
-		dst[0] = pal[pixelIndex1*3] << 2 | pal[pixelIndex1*3];
-		dst[1] = pal[pixelIndex1*3+1] << 2 | pal[pixelIndex1*3+1];
-		dst[2] = pal[pixelIndex1*3+2] << 2 | pal[pixelIndex1*3+2];
+		dst[0] = dumpPalette[pixelIndex1*3] << 2 | dumpPalette[pixelIndex1*3];
+		dst[1] = dumpPalette[pixelIndex1*3+1] << 2 | dumpPalette[pixelIndex1*3+1];
+		dst[2] = dumpPalette[pixelIndex1*3+2] << 2 | dumpPalette[pixelIndex1*3+2];
 		//dst[3] = 0xFF;
 		dst+=SCREENSHOT_BPP;
 
@@ -824,25 +869,20 @@ void dumpFrameBuffer(uint8 *src,uint8 *dst, int x,int y)
 	}
 }
 
-void Video::dumpFrameBuffers()
+void Video::dumpFrameBuffers(char* comment)
 {
 	
 	if (!traceFrameBufferCounter)
 	{
 		memset(allFrameBuffers,0,sizeof(allFrameBuffers));
-		fb1 = _curPagePtr1;
-		fb2 = _curPagePtr2;
-		fb3 = _curPagePtr3;
 	}
 
-	//if (_curPagePtr1 == _pagePtrs[0])
-	dumpFrameBuffer(fb1,allFrameBuffers,0,0);
 
-	//if (_curPagePtr1 == _pagePtrs[1])
-	dumpFrameBuffer(fb2,allFrameBuffers,0,200);
+	dumpFrameBuffer(_pagePtrs[0],allFrameBuffers,0,0);
+	dumpFrameBuffer(_pagePtrs[1],allFrameBuffers,0,200);
+	dumpFrameBuffer(_pagePtrs[2],allFrameBuffers,320,0);
+	dumpFrameBuffer(_pagePtrs[3],allFrameBuffers,320,200);
 
-	//if (_curPagePtr1 == _pagePtrs[2])
-	dumpFrameBuffer(fb3,allFrameBuffers,320,0);
 
 	//if (_curPagePtr1 == _pagePtrs[3])
 	//dumpFrameBuffer(sys,allFrameBuffers,320,200);
@@ -886,7 +926,7 @@ void Video::dumpFrameBuffers()
 	*/
 
 	char path[256];
-	sprintf(path,"test%d.png",traceFrameBufferCounter);
+	sprintf(path,"%4d%s.png",traceFrameBufferCounter,comment);
 	GL_FCS_SaveAsSpecifiedPNG(path,allFrameBuffers);
 }
 

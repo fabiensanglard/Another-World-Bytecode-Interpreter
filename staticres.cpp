@@ -30,7 +30,7 @@ const VirtualMachine::OpcodeStub VirtualMachine::opcodeTable[] = {
 	/* 0x04 */
 	&VirtualMachine::op_call,
 	&VirtualMachine::op_ret,
-	&VirtualMachine::op_break,
+	&VirtualMachine::op_pauseThread,
 	&VirtualMachine::op_jmp,
 	/* 0x08 */
 	&VirtualMachine::op_setSetVect,
@@ -44,7 +44,7 @@ const VirtualMachine::OpcodeStub VirtualMachine::opcodeTable[] = {
 	&VirtualMachine::op_copyVideoPage,
 	/* 0x10 */
 	&VirtualMachine::op_blitFramebuffer,
-	&VirtualMachine::op_halt,
+	&VirtualMachine::op_killThread,
 	&VirtualMachine::op_drawString,
 	&VirtualMachine::op_sub,
 	/* 0x14 */

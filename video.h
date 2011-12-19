@@ -112,7 +112,7 @@ struct Video {
 
 	#define TRACE_FRAMEBUFFER 1
 	#if TRACE_FRAMEBUFFER
-		void Video::dumpFrameBuffers();
+		void Video::dumpFrameBuffers(char* comment);
 	#endif
 };
 
