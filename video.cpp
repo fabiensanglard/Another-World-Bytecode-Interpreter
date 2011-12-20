@@ -641,7 +641,7 @@ void Video::changePal(uint8 palNum) {
 	printf("\nuint8 dumpPalette[48] = {\n");
 	for (int i = 0; i < NUM_COLORS; ++i) 
 	{
-		printf("0x%X,0x%X,0x%Xn",pal[i * 3 + 0],pal[i * 3 + 1],pal[i * 3 + 2]);
+		printf("0x%X,0x%X,0x%X,",pal[i * 3 + 0],pal[i * 3 + 1],pal[i * 3 + 2]);
 	}
 	printf("\n};\n");
 	#endif
@@ -917,7 +917,7 @@ void Video::dumpFrameBuffers(char* comment)
 	for(int i=0 ; i < 200 ; i++)
 		memcpy(allFrameBuffers+320+640*i,offScreen+400*i,320);
     */
-
+	  
 	int frameId = traceFrameBufferCounter++;
 	//Write bitmap to disk.
 
@@ -951,8 +951,11 @@ void Video::dumpFrameBuffers(char* comment)
     fclose(pScreenshot);
 	*/
 
+	
 	char path[256];
-	sprintf(path,"%4d%s.png",traceFrameBufferCounter,comment);
+	//sprintf(path,"%4d%s.png",traceFrameBufferCounter,comment);
+	sprintf(path,"%4d.png",traceFrameBufferCounter);
+
 	GL_FCS_SaveAsSpecifiedPNG(path,allFrameBuffers);
 }
 
