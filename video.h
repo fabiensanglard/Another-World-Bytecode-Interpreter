@@ -111,8 +111,9 @@ struct Video {
 	void saveOrLoad(Serializer &ser);
 
 	#define TRACE_PALETTE 1
-	#define TRACE_FRAMEBUFFER 0
+	#define TRACE_FRAMEBUFFER 1
 	#if TRACE_FRAMEBUFFER
+	    void Video::dumpFrameBuffer(uint8 *src,uint8 *dst, int x,int y);
 		void Video::dumpFrameBuffers(char* comment);
 	#endif
 };
