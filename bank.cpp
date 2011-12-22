@@ -64,6 +64,9 @@ void Bank::decUnk1(uint8 numChunks, uint8 addCount) {
 	}
 }
 
+/*
+   Note from fab: This look like run-length encoding.
+*/
 void Bank::decUnk2(uint8 numChunks) {
 	uint16 i = getCode(numChunks);
 	uint16 count = _unpCtx.size + 1;
@@ -76,6 +79,9 @@ void Bank::decUnk2(uint8 numChunks) {
 	}
 }
 
+/*
+	Most resource in the banks are compacted.
+*/
 bool Bank::unpack() {
 	_unpCtx.size = 0;
 	_unpCtx.datasize = READ_BE_UINT32(_iBuf); _iBuf -= 4;
