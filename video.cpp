@@ -102,9 +102,7 @@ void Video::readAndDrawPolygon(uint8 color, uint16 zoom, const Point &pt) {
 		polygon.readVertices(_pData.pc, zoom);
 
 		fillPolygon(color, zoom, pt);
-#if TRACE_FRAMEBUFFER
-		//	dumpFrameBuffers();
-#endif
+
 
 
 	} else {
@@ -113,17 +111,13 @@ void Video::readAndDrawPolygon(uint8 color, uint16 zoom, const Point &pt) {
 			warning("Video::readAndDrawPolygon() ec=0x%X (i != 2)", 0xF80);
 		} else if (i == 2) {
 			readAndDrawPolygonHierarchy(zoom, pt);
-#if TRACE_FRAMEBUFFER
-		//	dumpFrameBuffers();
-#endif
+
 		} else {
 			warning("Video::readAndDrawPolygon() ec=0x%X (i != 2)", 0xFBB);
 		}
 	}
 
-#if TRACE_FRAMEBUFFER
-		//	dumpFrameBuffers();
-#endif
+
 
 }
 
@@ -131,9 +125,7 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
 
 	if (polygon.bbw == 0 && polygon.bbh == 1 && polygon.numPoints == 4) {
 		drawPoint(color, pt.x, pt.y);
-#if TRACE_FRAMEBUFFER
-			//dumpFrameBuffers();
-#endif
+
 		return;
 	}
 	
@@ -175,6 +167,9 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
 #if TRACE_FRAMEBUFFER
 				dumpFrameBuffers("fillPolygonEnd");
 		#endif
+#if TRACE_BG_BUFFER
+			dumpBackGroundBuffer();
+#endif
 			break;
 		}
 		uint16 h;
@@ -211,6 +206,10 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
 		#if TRACE_FRAMEBUFFER
 				dumpFrameBuffers("fillPolygonChild");
 		#endif
+				#if TRACE_BG_BUFFER
+	 
+			dumpBackGroundBuffer();
+#endif
 	}
 
 
@@ -261,9 +260,7 @@ void Video::readAndDrawPolygonHierarchy(uint16 zoom, const Point &pgc) {
 		_pData.pc = bak;
 	}
 
-			#if TRACE_FRAMEBUFFER
-		//	dumpFrameBuffers();
-#endif
+	
 }
 
 int32 Video::calcStep(const Point &p1, const Point &p2, uint16 &dy) {
@@ -301,9 +298,6 @@ void Video::drawString(uint8 color, uint16 x, uint16 y, uint16 stringId) {
 		x++;
 		
 	}
-#if TRACE_FRAMEBUFFER
-//			dumpFrameBuffers();
-#endif
 }
 
 void Video::drawChar(uint8 character, uint16 x, uint16 y, uint8 color, uint8 *buf) {
@@ -396,9 +390,7 @@ void Video::drawLineBlend(int16 x1, int16 x2, uint8 color) {
 		++p;
 	}
 
-	#if TRACE_FRAMEBUFFER
-	//	dumpFrameBuffers();
-#endif
+
 }
 
 void Video::drawLineN(int16 x1, int16 x2, uint8 color) {
@@ -432,9 +424,7 @@ void Video::drawLineN(int16 x1, int16 x2, uint8 color) {
 		++p;		
 	}
 
-		#if TRACE_FRAMEBUFFER
-	//	dumpFrameBuffers();
-#endif
+	
 }
 
 void Video::drawLineP(int16 x1, int16 x2, uint8 color) {
@@ -471,9 +461,6 @@ void Video::drawLineP(int16 x1, int16 x2, uint8 color) {
 		++q;
 	}
 
-		#if TRACE_FRAMEBUFFER
-	//		dumpFrameBuffers();
-#endif
 }
 
 uint8 *Video::getPagePtr(uint8 page) {
@@ -519,6 +506,10 @@ void Video::fillPage(uint8 pageId, uint8 color) {
 
 #if TRACE_FRAMEBUFFER
 			dumpFrameBuffers("-fillPage");
+#endif
+			#if TRACE_BG_BUFFER
+	  
+			dumpBackGroundBuffer();
 #endif
 }
 
@@ -666,7 +657,10 @@ void Video::changePal(uint8 palNum) {
 	printf("\n};\n");
 	#endif
 
-	dumpPaletteCursor++;
+	
+			#if TRACE_FRAMEBUFFER
+	      dumpPaletteCursor++;
+#endif
 }
 
 void Video::updateDisplay(uint8 pageId) {
@@ -999,6 +993,148 @@ void Video::dumpFrameBuffers(char* comment)
 
 	GL_FCS_SaveAsSpecifiedPNG(path,allFrameBuffers);
 }
+#endif
 
+#if TRACE_BG_BUFFER
+
+
+
+uint8 bgPalette[48] = {
+0x8,0x8,0xC,0xC,0xC,0x15,0xC,0x11,0x1D,0x15,0x2A,0x3F,0x1D,0x19,0x19,0x37,0x2E,0x2A,0x26,0x1D,0x1D,0x37,0x26,0x22,0x22,0xC,0x0,0x26,0x33,0x3F,0x11,0x11,0x15,0x11,0x15,0x1D,0x15,0x19,0x26,0x15,0x1D,0x37,0x0,0x26,0x3F,0x2E,0x15,0x0,};
+void bgWriteLine(uint8 *dst,uint8 *src,int size)
+{
+	uint8* dumpPalette; 
+
+//	if (!dumpPaletteCursor)
+	//	dumpPalette = allPalettesDump[dumpPaletteCursor];
+//	else
+	  dumpPalette = bgPalette;
+
+	for( uint8 twoPixels = 0 ; twoPixels < size ; twoPixels++)
+	{
+		int pixelIndex0 = (*src & 0xF0) >> 4;
+		pixelIndex0 &= 0x10 -1;
+
+		int pixelIndex1 = (*src & 0xF);
+		pixelIndex1 &= 0x10 -1;
+
+		//We need to write those two pixels
+		dst[0] = dumpPalette[pixelIndex0*3] << 2 | dumpPalette[pixelIndex0*3];
+		dst[1] = dumpPalette[pixelIndex0*3+1] << 2 | dumpPalette[pixelIndex0*3+1];
+		dst[2] = dumpPalette[pixelIndex0*3+2] << 2 | dumpPalette[pixelIndex0*3+2];
+		//dst[3] = 0xFF;
+		dst+=3;
+
+		dst[0] = dumpPalette[pixelIndex1*3] << 2 | dumpPalette[pixelIndex1*3];
+		dst[1] = dumpPalette[pixelIndex1*3+1] << 2 | dumpPalette[pixelIndex1*3+1];
+		dst[2] = dumpPalette[pixelIndex1*3+2] << 2 | dumpPalette[pixelIndex1*3+2];
+		//dst[3] = 0xFF;
+		dst+=3;
+
+		src++;
+	}
+}
+
+void bgDumpFrameBuffer(uint8 *src,uint8 *dst, int x,int y)
+{
+
+	for (int line=199 ; line >= 0 ; line--)
+	{
+		bgWriteLine(dst + x*3 + y*320*3  ,src+line*160,160);
+		dst+= 320*3;
+	}
+}
+
+#include "png.h"
+int bgSaveAsSpecifiedPNG(char* path, uint8* pixels, int depth=8, int format=PNG_COLOR_TYPE_RGB)
+{
+	FILE * fp;
+	png_structp png_ptr = NULL;
+    png_infop info_ptr = NULL;
+    png_byte ** row_pointers = NULL;
+	int status = -1;
+	int bytePerPixel=0;
+    int y;
+
+    fp = fopen (path, "wb");
+    if (! fp) {
+        goto fopen_failed;
+    }
+
+	png_ptr = png_create_write_struct (PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    if (png_ptr == NULL) {
+        goto png_create_write_struct_failed;
+    }
+    
+    info_ptr = png_create_info_struct (png_ptr);
+    if (info_ptr == NULL) {
+        goto png_create_info_struct_failed;
+    }
+
+	if (setjmp (png_jmpbuf (png_ptr))) {
+        goto png_failure;
+    }
+    
+    /* Set image attributes. */
+
+    png_set_IHDR (png_ptr,
+                  info_ptr,
+                  320,
+                  200,
+                  depth,
+                  format,
+                  PNG_INTERLACE_NONE,
+                  PNG_COMPRESSION_TYPE_DEFAULT,
+                  PNG_FILTER_TYPE_DEFAULT);
+
+	if (format == PNG_COLOR_TYPE_GRAY	)
+		bytePerPixel = depth/8 * 1;
+	else
+		bytePerPixel = depth/8 * 3;
+
+	row_pointers = (png_byte **)png_malloc (png_ptr, 200 * sizeof (png_byte *));
+	//for (y = vid.height-1; y >=0; --y) 
+	for (y = 0; y < 200; y++) 
+    {
+		row_pointers[y] = (png_byte*)&pixels[320*(200-y)*bytePerPixel];
+	}
+
+	png_init_io (png_ptr, fp);
+    png_set_rows (png_ptr, info_ptr, row_pointers);
+    png_write_png (png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+	//png_read_image (png_ptr, info_ptr);//
+
+	status = 0;
+    
+    png_free (png_ptr, row_pointers);
+    
+
+	png_failure:   
+    png_create_info_struct_failed:
+			png_destroy_write_struct (&png_ptr, &info_ptr); 
+
+    png_create_write_struct_failed:
+		fclose (fp);
+	fopen_failed:
+		return status;
+}
+
+int bgFrameBufferCounter=0;
+
+void Video::dumpBackGroundBuffer()
+{
+	if (_curPagePtr1 != _pagePtrs[0])
+		return;
+
+	uint8 bgBuffer[320*200*3];
+	bgDumpFrameBuffer(_curPagePtr1,bgBuffer,0,0);
+
+
+	char path[256];
+	//sprintf(path,"%4d%s.png",traceFrameBufferCounter,comment);
+	sprintf(path,"bg%4d.png",bgFrameBufferCounter++);
+
+	bgSaveAsSpecifiedPNG(path,bgBuffer);
+}
 
 #endif

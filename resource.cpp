@@ -41,14 +41,17 @@ void Resource::readBank(const MemEntry *me, uint8 *dstBuf) {
 
 char* resTypeToString[]=
 {
-	"RT_SOUND ",
-	"RT_MUSIC ",
-	"RT_VIDBUF", 
-	"RT_PAL   ", 
-	"RT_SCRIPT",
-	"RT_VBMP  "
+	"RT_SOUND  ",
+	"RT_MUSIC   ",
+	"RT_POLY_ANIM  ", 
+	"RT_PALETTE     ", 
+	"RT_BYTECODE",
+	"RT_POLY_CINEMATIC    "
 };
-
+/*
+	"RT_BYTECODE      ",
+	"RT_POLY_CINEMATIC"
+	*/
 int resourceSizeStats[7];
 #define STATS_TOTAL_SIZE 6
 int resourceUnitStats[7];
@@ -146,7 +149,7 @@ void Resource::loadMarkedAsNeeded() {
 		// "That's what she said"
 
 		uint8 *loadDestination = NULL;
-		if (me->type == RT_VIDBUF) {
+		if (me->type == RT_POLY_ANIM) {
 			loadDestination = _vidCurPtr;
 		} else {
 			loadDestination = _scriptCurPtr;
@@ -164,7 +167,7 @@ void Resource::loadMarkedAsNeeded() {
 		} else {
 			debug(DBG_BANK, "Resource::load() bufPos=%X size=%X type=%X pos=%X bankId=%X", loadDestination - _memPtrStart, me->packedSize, me->type, me->bankOffset, me->bankId);
 			readBank(me, loadDestination);
-			if(me->type == RT_VIDBUF) {
+			if(me->type == RT_POLY_ANIM) {
 				video->copyPagePtr(_vidCurPtr);
 				me->state = 0;
 			} else {
@@ -183,7 +186,7 @@ void Resource::invalidateRes() {
 	MemEntry *me = _memList;
 	uint16 i = _numMemList;
 	while (i--) {
-		if (me->type <= RT_VIDBUF || me->type > 6) {  // 6 WTF ?!?! ResType goes up to 5 !!
+		if (me->type <= RT_POLY_ANIM || me->type > 6) {  // 6 WTF ?!?! ResType goes up to 5 !!
 			me->state = MEMENTRY_STATE_NOT_NEEDED;
 		}
 		++me;
@@ -232,7 +235,7 @@ void Resource::loadPartsOrMemoryEntry(uint16 resourceId) {
    (as seen in memListParts). */
 void Resource::setupPart(uint16 partId) {
 
-	printf("setupPart %X\n",partId);
+	
 
 	if (partId == currentPartId)
 		return;
@@ -242,17 +245,17 @@ void Resource::setupPart(uint16 partId) {
 
 	uint16 memListPartIndex = partId - GAME_PART_FIRST;
 
-	uint8 palleteIndex = memListParts[memListPartIndex][MEMLIST_PART_PALETTE];
+	uint8 paletteIndex = memListParts[memListPartIndex][MEMLIST_PART_PALETTE];
 	uint8 codeIndex    = memListParts[memListPartIndex][MEMLIST_PART_CODE];
-	uint8 video1Index  = memListParts[memListPartIndex][MEMLIST_PART_VIDEO1];
+	uint8 videoCinematicIndex  = memListParts[memListPartIndex][MEMLIST_PART_VIDEO1];
 	uint8 video2Index  = memListParts[memListPartIndex][MEMLIST_PART_VIDEO2];
 
 	// Mark all resources as located on harddrive.
 	invalidateAll();
 
-	_memList[palleteIndex].state = 2;
+	_memList[paletteIndex].state = 2;
 	_memList[codeIndex].state = 2;
-	_memList[video1Index].state = 2;
+	_memList[videoCinematicIndex].state = 2;
 
 	// This is probably a cinematic or a non interactive part of the game.
 	// Player and enemy polygons are not needed.
@@ -262,15 +265,26 @@ void Resource::setupPart(uint16 partId) {
 
 	loadMarkedAsNeeded();
 
-	segPalettes = _memList[palleteIndex].bufPtr;
+	segPalettes = _memList[paletteIndex].bufPtr;
 	segBytecode     = _memList[codeIndex].bufPtr;
-	segCinematic   = _memList[video1Index].bufPtr;
+	segCinematic   = _memList[videoCinematicIndex].bufPtr;
+
+
 
 	// This is probably a cinematic or a non interactive part of the game.
 	// Player and enemy polygons are not needed.
 	if (video2Index != MEMLIST_PART_NONE) 
 		_segVideo2 = _memList[video2Index].bufPtr;
 	
+	debug(DBG_RES,"setupPart(%d)",partId-GAME_PART_FIRST);
+	debug(DBG_RES,"Loaded resource %d (%s) in segPalettes.",paletteIndex,resTypeToString[_memList[paletteIndex].type]);
+	debug(DBG_RES,"Loaded resource %d (%s) in segBytecode.",codeIndex,resTypeToString[_memList[codeIndex].type]);
+	debug(DBG_RES,"Loaded resource %d (%s) in segCinematic.",videoCinematicIndex,resTypeToString[_memList[videoCinematicIndex].type]);
+
+	if (video2Index != MEMLIST_PART_NONE) 
+		debug(DBG_RES,"Loaded resource %d (%s) in _segVideo2.",video2Index,resTypeToString[_memList[video2Index].type]);
+
+
 
 	currentPartId = partId;
 	

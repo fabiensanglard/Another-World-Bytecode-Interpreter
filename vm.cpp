@@ -140,7 +140,7 @@ void VirtualMachine::op_condJmp() {
 #ifdef BYPASS_PROTECTION
 	
 	if (res->currentPartId == GAME_PART_FIRST && _scriptPtr.pc == res->segBytecode + 0xCB9) {
-		/*
+		
 		// (0x0CB8) condJmp(0x80, VAR(41), VAR(30), 0xCD3)
 		*(_scriptPtr.pc + 0x00) = 0x81;
 		*(_scriptPtr.pc + 0x03) = 0x0D;
@@ -150,8 +150,8 @@ void VirtualMachine::op_condJmp() {
 		*(_scriptPtr.pc + 0x9A) = 0x5A;
 		printf("VirtualMachine::op_condJmp() bypassing protection");
 		printf("bytecode has been patched/n");
-		*/
-		this->bypassProtection() ;
+		
+		//this->bypassProtection() ;
 	}
 	
 	

@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
 	}
 	//FCS
 	//g_debugMask = DBG_INFO; // DBG_VM | DBG_BANK | DBG_VIDEO | DBG_SER | DBG_SND
-	g_debugMask = 0;//DBG_RES ;
+	g_debugMask = DBG_RES ;
 	//g_debugMask = 0 ;//DBG_INFO |  DBG_VM | DBG_BANK | DBG_VIDEO | DBG_SER | DBG_SND ;
 	
 	Engine* e = new Engine(stub, dataPath, savePath);
@@ -207,12 +207,12 @@ int main(int argc, char *argv[]) {
 
    Total bank      size: 1236519 (100%)
    ---------------------------------
-   Total RT_SOUND  size: 585052  ( 47%)
-   Total RT_MUSIC  size:   3540  (  0%)
-   Total RT_VIDBUF size: 106676  (  9%)
-   Total RT_PAL    size:  11032  (  1%)
-   Total RT_SCRIPT size: 135948  ( 11%)
-   Total RT_VBMP   size: 291008  ( 24%)
+   Total RT_SOUND    size: 585052  ( 47%)
+   Total RT_MUSIC    size:   3540  (  0%)
+   Total RT_POLY_ANIM   size: 106676  (  9%)
+   Total RT_PALETTE      size:  11032  (  1%)
+   Total RT_BYTECODE size: 135948  ( 11%)
+   Total RT_POLY_CINEMATIC     size: 291008  ( 24%)
 
    As usual sounds are the most consuming assets (Quake1,Quake2 etc.....)
 
