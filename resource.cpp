@@ -115,7 +115,7 @@ void Resource::readEntries() {
 			break;
 		}
 
-		debug(DBG_RES,"R:0x%X, %s size=%5d (compacted=%d)",resourceCounter,resTypeToString[memEntry->type],memEntry->size,memEntry->packedSize!=memEntry->size);	
+		debug(DBG_RES,"R:0x%X, %s size=%5d (compacted gain=%2.0f%%)",resourceCounter,resTypeToString[memEntry->type],memEntry->size,(memEntry->size-memEntry->packedSize)/(float)memEntry->size*100);	
 		resourceCounter++;
 
 		_numMemList++;
@@ -136,11 +136,15 @@ void Resource::readEntries() {
 
 	debug(DBG_RES,"\n");
 	for(int i=0 ; i < 6 ; i++)
-		debug(DBG_RES,"Total %s size: %7d compressedSize %7d (%2.0f%%)"
+		debug(DBG_RES,"Total %s unpacked size: %7d (%2.0f%% of total unpacked size) packedSize %7d (%2.0f%% of floppy space) gain:(%2.0f%%)"
 		,resTypeToString[i]
 	,resourceSizeStats[i][RES_SIZE]
+	,resourceSizeStats[i][RES_SIZE]/(float)resourceSizeStats[STATS_TOTAL_SIZE][RES_SIZE]*100
 	,resourceSizeStats[i][RES_COMPRESSED]
-	,100*(resourceUnitStats[i][RES_SIZE]+resourceUnitStats[i][RES_COMPRESSED])/(float)resourceCounter);
+	,resourceSizeStats[i][RES_COMPRESSED]/(float)resourceSizeStats[STATS_TOTAL_SIZE][RES_COMPRESSED]*100
+	,(resourceSizeStats[i][RES_SIZE]-resourceSizeStats[i][RES_COMPRESSED])/(float)resourceSizeStats[i][RES_SIZE]*100
+		);
+	debug(DBG_RES,"Note: Damn you sound compression rate!");
 
 	debug(DBG_RES,"\nTotal bank files:              %d",resourceUnitStats[STATS_TOTAL_SIZE][RES_SIZE]+resourceUnitStats[STATS_TOTAL_SIZE][RES_COMPRESSED]);
 	for(int i=0 ; i < 6 ; i++)
@@ -277,7 +281,7 @@ void Resource::setupPart(uint16 partId) {
 
 	uint8 paletteIndex = memListParts[memListPartIndex][MEMLIST_PART_PALETTE];
 	uint8 codeIndex    = memListParts[memListPartIndex][MEMLIST_PART_CODE];
-	uint8 videoCinematicIndex  = memListParts[memListPartIndex][MEMLIST_PART_VIDEO1];
+	uint8 videoCinematicIndex  = memListParts[memListPartIndex][MEMLIST_PART_POLY_CINEMATIC];
 	uint8 video2Index  = memListParts[memListPartIndex][MEMLIST_PART_VIDEO2];
 
 	// Mark all resources as located on harddrive.
