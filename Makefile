@@ -9,13 +9,15 @@ CXXFLAGS:= -g -O -Wall -Wuninitialized -Wno-unknown-pragmas -Wshadow -Wstrict-pr
 CXXFLAGS+= -Wimplicit -Wundef -Wreorder -Wwrite-strings -Wnon-virtual-dtor -Wno-multichar
 CXXFLAGS+= $(SDL_CFLAGS) $(DEFINES)
 
-SRCS = bank.cpp file.cpp engine.cpp logic.cpp mixer.cpp resource.cpp sdlstub.cpp \
-	serializer.cpp sfxplayer.cpp staticres.cpp util.cpp video.cpp main.cpp
+SRCS = bank.cpp file.cpp engine.cpp mixer.cpp resource.cpp parts.cpp vm.cpp \
+	serializer.cpp sfxplayer.cpp staticres.cpp util.cpp video.cpp main.cpp sysImplementation.cpp
+
+# logic.cpp sdlstub.cpp
 
 OBJS = $(SRCS:.cpp=.o)
 DEPS = $(SRCS:.cpp=.d)
 
-raw: $(OBJS)
+game: $(OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(SDL_LIBS) -lz
 
 .cpp.o:
