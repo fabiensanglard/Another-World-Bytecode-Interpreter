@@ -50,7 +50,7 @@ void SfxPlayer::loadSfxModule(uint16 resNum, uint16 delay, uint8 pos) {
 
 	MemEntry *me = &res->_memList[resNum];
 
-	if (me->state == 1 && me->type == Resource::ResType::RT_MUSIC) {
+	if (me->state == 1 && me->type == Resource::RT_MUSIC) {
 		_resNum = resNum;
 		memset(&_sfxMod, 0, sizeof(SfxModule));
 		_sfxMod.curOrder = pos;
