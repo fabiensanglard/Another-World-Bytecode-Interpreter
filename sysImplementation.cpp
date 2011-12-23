@@ -116,7 +116,7 @@ void SDLStub::destroy() {
 
 void SDLStub::setPalette(uint8 start, uint8 numEnties, const uint8 *buf) {
 
-	assert(s + n <= 16);
+	assert(start + numEnties <= 16);
 
 	for (int i = start; i < start + numEnties; ++i) {
 
