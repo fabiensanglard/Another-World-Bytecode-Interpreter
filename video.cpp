@@ -199,7 +199,7 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
 				cpt1 += step1;
 				cpt2 += step2;
 				++_hliney;					
-				if (_hliney > 199) break;
+				if (_hliney > 199) return;
 			}
 		}
 
