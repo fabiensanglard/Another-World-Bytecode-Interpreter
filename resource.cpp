@@ -25,7 +25,7 @@
 #include "parts.h"
 
 Resource::Resource(Video *vid, const char *dataDir) 
-	: video(vid), _dataDir(dataDir) {
+	: video(vid), _dataDir(dataDir), currentPartId(0) {
 }
 
 void Resource::readBank(const MemEntry *me, uint8 *dstBuf) {
