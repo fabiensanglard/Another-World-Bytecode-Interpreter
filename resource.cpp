@@ -39,19 +39,21 @@ void Resource::readBank(const MemEntry *me, uint8 *dstBuf) {
 
 }
 
-char* resTypeToString[]=
+static const char *resTypeToString(unsigned int type)
 {
-	"RT_SOUND         ",
-	"RT_MUSIC         ",
-	"RT_POLY_ANIM     ", 
-	"RT_PALETTE       ", 
-	"RT_BYTECODE      ",
-	"RT_POLY_CINEMATIC"
-};
-/*
-	"RT_BYTECODE      ",
-	"RT_POLY_CINEMATIC"
-	*/
+	static const char* resTypes[]=
+	{
+		"RT_SOUND",
+		"RT_MUSIC",
+		"RT_POLY_ANIM",
+		"RT_PALETTE",
+		"RT_BYTECODE",
+		"RT_POLY_CINEMATIC"
+	};
+	if (type >= (sizeof(resTypes) / sizeof(const char *)))
+		return "RT_UNKNOWN";
+	return resTypes[type];
+}
 
 #define RES_SIZE 0
 #define RES_COMPRESSED 1
@@ -115,7 +117,7 @@ void Resource::readEntries() {
 			break;
 		}
 
-		debug(DBG_RES,"R:0x%X, %s size=%5d (compacted gain=%2.0f%%)",resourceCounter,resTypeToString[memEntry->type],memEntry->size,(memEntry->size-memEntry->packedSize)/(float)memEntry->size*100);	
+		debug(DBG_RES,"R:0x%X, %s size=%5d (compacted gain=%2.0f%%)",resourceCounter,resTypeToString(memEntry->type),memEntry->size,(memEntry->size-memEntry->packedSize)/(float)memEntry->size*100);	
 		resourceCounter++;
 
 		_numMemList++;
@@ -137,7 +139,7 @@ void Resource::readEntries() {
 	debug(DBG_RES,"\n");
 	for(int i=0 ; i < 6 ; i++)
 		debug(DBG_RES,"Total %s unpacked size: %7d (%2.0f%% of total unpacked size) packedSize %7d (%2.0f%% of floppy space) gain:(%2.0f%%)"
-		,resTypeToString[i]
+		,resTypeToString(i)
 	,resourceSizeStats[i][RES_SIZE]
 	,resourceSizeStats[i][RES_SIZE]/(float)resourceSizeStats[STATS_TOTAL_SIZE][RES_SIZE]*100
 	,resourceSizeStats[i][RES_COMPRESSED]
@@ -148,7 +150,7 @@ void Resource::readEntries() {
 
 	debug(DBG_RES,"\nTotal bank files:              %d",resourceUnitStats[STATS_TOTAL_SIZE][RES_SIZE]+resourceUnitStats[STATS_TOTAL_SIZE][RES_COMPRESSED]);
 	for(int i=0 ; i < 6 ; i++)
-		debug(DBG_RES,"Total %s files: %3d",resTypeToString[i],resourceUnitStats[i][RES_SIZE]+resourceUnitStats[i][RES_COMPRESSED]);
+		debug(DBG_RES,"Total %s files: %3d",resTypeToString(i),resourceUnitStats[i][RES_SIZE]+resourceUnitStats[i][RES_COMPRESSED]);
 
 }
 
@@ -312,12 +314,12 @@ void Resource::setupPart(uint16 partId) {
 	
 	debug(DBG_RES,"");
 	debug(DBG_RES,"setupPart(%d)",partId-GAME_PART_FIRST);
-	debug(DBG_RES,"Loaded resource %d (%s) in segPalettes.",paletteIndex,resTypeToString[_memList[paletteIndex].type]);
-	debug(DBG_RES,"Loaded resource %d (%s) in segBytecode.",codeIndex,resTypeToString[_memList[codeIndex].type]);
-	debug(DBG_RES,"Loaded resource %d (%s) in segCinematic.",videoCinematicIndex,resTypeToString[_memList[videoCinematicIndex].type]);
+	debug(DBG_RES,"Loaded resource %d (%s) in segPalettes.",paletteIndex,resTypeToString(_memList[paletteIndex].type));
+	debug(DBG_RES,"Loaded resource %d (%s) in segBytecode.",codeIndex,resTypeToString(_memList[codeIndex].type));
+	debug(DBG_RES,"Loaded resource %d (%s) in segCinematic.",videoCinematicIndex,resTypeToString(_memList[videoCinematicIndex].type));
 
 	if (video2Index != MEMLIST_PART_NONE) 
-		debug(DBG_RES,"Loaded resource %d (%s) in _segVideo2.",video2Index,resTypeToString[_memList[video2Index].type]);
+		debug(DBG_RES,"Loaded resource %d (%s) in _segVideo2.",video2Index,resTypeToString(_memList[video2Index].type));
 
 
 
