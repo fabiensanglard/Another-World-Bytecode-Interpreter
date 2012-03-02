@@ -598,7 +598,7 @@ void VirtualMachine::inp_updatePlayer() {
 
 	if (res->currentPartId == 0x3E89) {
 		char c = sys->input.lastChar;
-		if (c == 8 | /*c == 0xD |*/ c == 0 | (c >= 'a' && c <= 'z')) {
+		if (c == 8 || /*c == 0xD |*/ c == 0 || (c >= 'a' && c <= 'z')) {
 			vmVariables[VM_VARIABLE_LAST_KEYCHAR] = c & ~0x20;
 			sys->input.lastChar = 0;
 		}
