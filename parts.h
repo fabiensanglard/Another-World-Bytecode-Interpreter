@@ -20,7 +20,7 @@
 #define GAME_PART10      0x3E89
 #define GAME_PART_LAST   0x3E89
 
-extern const uint16 memListParts[GAME_NUM_PARTS][4];
+extern const uint16_t memListParts[GAME_NUM_PARTS][4];
 
 //For each part of the game, four resources are referenced.
 #define MEMLIST_PART_PALETTE 0

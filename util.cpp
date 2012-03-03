@@ -20,9 +20,9 @@
 #include "util.h"
 
 
-uint16 g_debugMask;
+uint16_t g_debugMask;
 
-void debug(uint16 cm, const char *msg, ...) {
+void debug(uint16_t cm, const char *msg, ...) {
 	char buf[1024];
 	if (cm & g_debugMask) {
 		va_list va;

@@ -7,3 +7,5 @@ TODO
 **/*.sdf
 **/*.suo
 **/*.user
+**.[ado]
+/game

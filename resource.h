@@ -32,19 +32,19 @@
 	populate and array of MemEntry
 */
 struct MemEntry {
-	uint8 state;         // 0x0
-	uint8 type;          // 0x1, Resource::ResType
-	uint8 *bufPtr;       // 0x2
-	uint16 unk4;         // 0x4, unused
-	uint8 rankNum;       // 0x6
-	uint8 bankId;       // 0x7
-	uint32 bankOffset;      // 0x8 0xA
-	uint16 unkC;         // 0xC, unused
-	uint16 packedSize;   // 0xE
+	uint8_t state;         // 0x0
+	uint8_t type;          // 0x1, Resource::ResType
+	uint8_t *bufPtr;       // 0x2
+	uint16_t unk4;         // 0x4, unused
+	uint8_t rankNum;       // 0x6
+	uint8_t bankId;       // 0x7
+	uint32_t bankOffset;      // 0x8 0xA
+	uint16_t unkC;         // 0xC, unused
+	uint16_t packedSize;   // 0xE
 	                     // All ressources are packed (for a gain of 28% according to Chahi)
 
-	uint16 unk10;        // 0x10, unused
-	uint16 size; // 0x12
+	uint16_t unk10;        // 0x10, unused
+	uint16_t size; // 0x12
 };
 /*
      Note: state is not a boolean, it can have value 0, 1 or 2. WTF ?!
@@ -79,25 +79,25 @@ struct Resource {
 	Video *video;
 	const char *_dataDir;
 	MemEntry _memList[150];
-	uint16 _numMemList;
-	uint16 currentPartId, requestedNextPart;
-	uint8 *_memPtrStart, *_scriptBakPtr, *_scriptCurPtr, *_vidBakPtr, *_vidCurPtr;
+	uint16_t _numMemList;
+	uint16_t currentPartId, requestedNextPart;
+	uint8_t *_memPtrStart, *_scriptBakPtr, *_scriptCurPtr, *_vidBakPtr, *_vidCurPtr;
 	bool _useSegVideo2;
 
-	uint8 *segPalettes;
-	uint8 *segBytecode;
-	uint8 *segCinematic;
-	uint8 *_segVideo2;
+	uint8_t *segPalettes;
+	uint8_t *segBytecode;
+	uint8_t *segCinematic;
+	uint8_t *_segVideo2;
 
 	Resource(Video *vid, const char *dataDir);
 	
-	void readBank(const MemEntry *me, uint8 *dstBuf);
+	void readBank(const MemEntry *me, uint8_t *dstBuf);
 	void readEntries();
 	void loadMarkedAsNeeded();
 	void invalidateAll();
 	void invalidateRes();	
-	void loadPartsOrMemoryEntry(uint16 num);
-	void setupPart(uint16 ptrId);
+	void loadPartsOrMemoryEntry(uint16_t num);
+	void setupPart(uint16_t ptrId);
 	void allocMemBlock();
 	void freeMemBlock();
 	

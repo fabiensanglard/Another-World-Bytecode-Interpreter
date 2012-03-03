@@ -20,7 +20,7 @@
 #include "file.h"
 
 
-Serializer::Serializer(File *stream, Mode mode, uint8 *ptrBlock, uint16 saveVer)
+Serializer::Serializer(File *stream, Mode mode, uint8_t *ptrBlock, uint16_t saveVer)
 	: _stream(stream), _mode(mode), _ptrBlock(ptrBlock), _saveVer(saveVer) {
 }
 
@@ -52,7 +52,7 @@ void Serializer::saveEntries(Entry *entry) {
 					_stream->write(entry->data, entry->n);
 					_bytesCount += entry->n;
 				} else {
-					uint8 *p = (uint8 *)entry->data;
+					uint8_t *p = (uint8_t *)entry->data;
 					for (int i = 0; i < entry->n; ++i) {
 						saveInt(entry->size, p);
 						p += entry->size;
@@ -61,7 +61,7 @@ void Serializer::saveEntries(Entry *entry) {
 				}
 				break;
 			case SET_PTR:
-				_stream->writeUint32BE(*(uint8 **)(entry->data) - _ptrBlock);
+				_stream->writeUint32_tBE(*(uint8_t **)(entry->data) - _ptrBlock);
 				_bytesCount += 4;
 				break;
 			case SET_END:
@@ -85,7 +85,7 @@ void Serializer::loadEntries(Entry *entry) {
 					_stream->read(entry->data, entry->n);
 					_bytesCount += entry->n;
 				} else {
-					uint8 *p = (uint8 *)entry->data;
+					uint8_t *p = (uint8_t *)entry->data;
 					for (int i = 0; i < entry->n; ++i) {
 						loadInt(entry->size, p);
 						p += entry->size;
@@ -94,7 +94,7 @@ void Serializer::loadEntries(Entry *entry) {
 				}
 				break;
 			case SET_PTR:
-				*(uint8 **)(entry->data) = _ptrBlock + _stream->readUint32BE();
+				*(uint8_t **)(entry->data) = _ptrBlock + _stream->readUint32_tBE();
 				_bytesCount += 4;
 				break;
 			case SET_END:
@@ -104,30 +104,30 @@ void Serializer::loadEntries(Entry *entry) {
 	}
 }
 
-void Serializer::saveInt(uint8 es, void *p) {
+void Serializer::saveInt(uint8_t es, void *p) {
 	switch (es) {
 	case 1:
-		_stream->writeByte(*(uint8 *)p);
+		_stream->writeByte(*(uint8_t *)p);
 		break;
 	case 2:
-		_stream->writeUint16BE(*(uint16 *)p);
+		_stream->writeUint16_tBE(*(uint16_t *)p);
 		break;
 	case 4:
-		_stream->writeUint32BE(*(uint32 *)p);
+		_stream->writeUint32_tBE(*(uint32_t *)p);
 		break;
 	}
 }
 
-void Serializer::loadInt(uint8 es, void *p) {
+void Serializer::loadInt(uint8_t es, void *p) {
 	switch (es) {
 	case 1:
-		*(uint8 *)p = _stream->readByte();
+		*(uint8_t *)p = _stream->readByte();
 		break;
 	case 2:
-		*(uint16 *)p = _stream->readUint16BE();
+		*(uint16_t *)p = _stream->readUint16_tBE();
 		break;
 	case 4:
-		*(uint32 *)p = _stream->readUint32BE();
+		*(uint32_t *)p = _stream->readUint32_tBE();
 		break;
 	}
 }

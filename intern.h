@@ -39,24 +39,24 @@ inline void SWAP(T &a, T &b) {
 }
 
 struct Ptr {
-	uint8 *pc;
+	uint8_t *pc;
 	
-	uint8 fetchByte() {
+	uint8_t fetchByte() {
 		return *pc++;
 	}
 	
-	uint16 fetchWord() {
-		uint16 i = READ_BE_UINT16(pc);
+	uint16_t fetchWord() {
+		uint16_t i = READ_BE_UINT16(pc);
 		pc += 2;
 		return i;
 	}
 };
 
 struct Point {
-	int16 x, y;
+	int16_t x, y;
 
 	Point() : x(0), y(0) {}
-	Point(int16 xx, int16 yy) : x(xx), y(yy) {}
+	Point(int16_t xx, int16_t yy) : x(xx), y(yy) {}
 	Point(const Point &p) : x(p.x), y(p.y) {}
 };
 
