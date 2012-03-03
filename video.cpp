@@ -224,8 +224,6 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
 */
 void Video::readAndDrawPolygonHierarchy(uint16 zoom, const Point &pgc) {
 
-	char nullChar;
-
 	Point pt(pgc);
 	pt.x -= _pData.fetchByte() * zoom / 64;
 	pt.y -= _pData.fetchByte() * zoom / 64;
