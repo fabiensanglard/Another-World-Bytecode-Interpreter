@@ -71,7 +71,7 @@ struct VirtualMachine {
 	static const OpcodeStub opcodeTable[];
 
 	//This table is used to play a sound
-	static const uint16 frequenceTable[];
+	static const uint16_t frequenceTable[];
 
 	Mixer *mixer;
 	Resource *res;
@@ -83,11 +83,11 @@ struct VirtualMachine {
 
 
 	
-	int16 vmVariables[VM_NUM_VARIABLES];
-	uint16 _scriptStackCalls[VM_NUM_THREADS];
+	int16_t vmVariables[VM_NUM_VARIABLES];
+	uint16_t _scriptStackCalls[VM_NUM_THREADS];
 
     
-	uint16 threadsData[NUM_DATA_FIELDS][VM_NUM_THREADS];
+	uint16_t threadsData[NUM_DATA_FIELDS][VM_NUM_THREADS];
 	// This array is used: 
 	//     0 to save the channel's instruction pointer 
 	//     when the channel release control (this happens on a break).
@@ -95,7 +95,7 @@ struct VirtualMachine {
 	//     1 When a setVec is requested for the next vm frame.
 
 
-	uint8 vmIsChannelActive[NUM_THREAD_FIELDS][VM_NUM_THREADS];
+	uint8_t vmIsChannelActive[NUM_THREAD_FIELDS][VM_NUM_THREADS];
 
 
 
@@ -104,7 +104,7 @@ struct VirtualMachine {
 
 
 	Ptr _scriptPtr;
-	uint8 _stackPtr;
+	uint8_t _stackPtr;
 	bool gotoNextThread;
 	bool _fastMode;
 
@@ -139,8 +139,8 @@ struct VirtualMachine {
 	void op_updateMemList();
 	void op_playMusic();
 
-	void initForPart(uint16 partId);
-	void setupPart(uint16 partId);
+	void initForPart(uint16_t partId);
+	void setupPart(uint16_t partId);
 	void checkThreadRequests();
 	void hostFrame();
 	void executeThread();
@@ -148,8 +148,8 @@ struct VirtualMachine {
 	void inp_updatePlayer();
 	void inp_handleSpecialKeys();
 	
-	void snd_playSound(uint16 resNum, uint8 freq, uint8 vol, uint8 channel);
-	void snd_playMusic(uint16 resNum, uint16 delay, uint8 pos);
+	void snd_playSound(uint16_t resNum, uint8_t freq, uint8_t vol, uint8_t channel);
+	void snd_playMusic(uint16_t resNum, uint16_t delay, uint8_t pos);
 	
 	void saveOrLoad(Serializer &ser);
 	void bypassProtection();

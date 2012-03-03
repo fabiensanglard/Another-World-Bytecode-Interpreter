@@ -25,7 +25,7 @@ Bank::Bank(const char *dataDir)
 	: _dataDir(dataDir) {
 }
 
-bool Bank::read(const MemEntry *me, uint8 *buf) {
+bool Bank::read(const MemEntry *me, uint8_t *buf) {
 
 	bool ret = false;
 	char bankName[10];
@@ -53,13 +53,13 @@ bool Bank::read(const MemEntry *me, uint8 *buf) {
 	return ret;
 }
 
-void Bank::decUnk1(uint8 numChunks, uint8 addCount) {
-	uint16 count = getCode(numChunks) + addCount + 1;
+void Bank::decUnk1(uint8_t numChunks, uint8_t addCount) {
+	uint16_t count = getCode(numChunks) + addCount + 1;
 	debug(DBG_BANK, "Bank::decUnk1(%d, %d) count=%d", numChunks, addCount, count);
 	_unpCtx.datasize -= count;
 	while (count--) {
 		assert(_oBuf >= _iBuf && _oBuf >= _startBuf);
-		*_oBuf = (uint8)getCode(8);
+		*_oBuf = (uint8_t)getCode(8);
 		--_oBuf;
 	}
 }
@@ -67,9 +67,9 @@ void Bank::decUnk1(uint8 numChunks, uint8 addCount) {
 /*
    Note from fab: This look like run-length encoding.
 */
-void Bank::decUnk2(uint8 numChunks) {
-	uint16 i = getCode(numChunks);
-	uint16 count = _unpCtx.size + 1;
+void Bank::decUnk2(uint8_t numChunks) {
+	uint16_t i = getCode(numChunks);
+	uint16_t count = _unpCtx.size + 1;
 	debug(DBG_BANK, "Bank::decUnk2(%d) i=%d count=%d", numChunks, i, count);
 	_unpCtx.datasize -= count;
 	while (count--) {
@@ -98,7 +98,7 @@ bool Bank::unpack() {
 				decUnk2(8);
 			}
 		} else {
-			uint16 c = getCode(2);
+			uint16_t c = getCode(2);
 			if (c == 3) {
 				decUnk1(8, 8);
 			} else {
@@ -115,8 +115,8 @@ bool Bank::unpack() {
 	return (_unpCtx.crc == 0);
 }
 
-uint16 Bank::getCode(uint8 numChunks) {
-	uint16 c = 0;
+uint16_t Bank::getCode(uint8_t numChunks) {
+	uint16_t c = 0;
 	while (numChunks--) {
 		c <<= 1;
 		if (nextChunk()) {

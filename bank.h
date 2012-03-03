@@ -24,24 +24,24 @@
 struct MemEntry;
 
 struct UnpackContext {
-	uint16 size;
-	uint32 crc;
-	uint32 chk;
-	int32 datasize;
+	uint16_t size;
+	uint32_t crc;
+	uint32_t chk;
+	int32_t datasize;
 };
 
 struct Bank {
 	UnpackContext _unpCtx;
 	const char *_dataDir;
-	uint8 *_iBuf, *_oBuf, *_startBuf;
+	uint8_t *_iBuf, *_oBuf, *_startBuf;
 
 	Bank(const char *dataDir);
 
-	bool read(const MemEntry *me, uint8 *buf);
-	void decUnk1(uint8 numChunks, uint8 addCount);
-	void decUnk2(uint8 numChunks);
+	bool read(const MemEntry *me, uint8_t *buf);
+	void decUnk1(uint8_t numChunks, uint8_t addCount);
+	void decUnk2(uint8_t numChunks);
 	bool unpack();
-	uint16 getCode(uint8 numChunks);
+	uint16_t getCode(uint8_t numChunks);
 	bool nextChunk();
 	bool rcr(bool CF);
 };

@@ -105,7 +105,7 @@ void Engine::processInput() {
 		sys->input.fastMode = false;
 	}
 	if (sys->input.stateSlot != 0) {
-		int8 slot = _stateSlot + sys->input.stateSlot;
+		int8_t slot = _stateSlot + sys->input.stateSlot;
 		if (slot >= 0 && slot < MAX_SAVE_SLOTS) {
 			_stateSlot = slot;
 			debug(DBG_INFO, "Current game state slot is %d", _stateSlot);
@@ -114,11 +114,11 @@ void Engine::processInput() {
 	}
 }
 
-void Engine::makeGameStateName(uint8 slot, char *buf) {
+void Engine::makeGameStateName(uint8_t slot, char *buf) {
 	sprintf(buf, "raw.s%02d", slot);
 }
 
-void Engine::saveGameState(uint8 slot, const char *desc) {
+void Engine::saveGameState(uint8_t slot, const char *desc) {
 	char stateFile[20];
 	makeGameStateName(slot, stateFile);
 	File f(true);
@@ -126,9 +126,9 @@ void Engine::saveGameState(uint8 slot, const char *desc) {
 		warning("Unable to save state file '%s'", stateFile);
 	} else {
 		// header
-		f.writeUint32BE('AWSV');
-		f.writeUint16BE(Serializer::CUR_VER);
-		f.writeUint16BE(0);
+		f.writeUint32_tBE('AWSV');
+		f.writeUint16_tBE(Serializer::CUR_VER);
+		f.writeUint16_tBE(0);
 		char hdrdesc[32];
 		strncpy(hdrdesc, desc, sizeof(hdrdesc) - 1);
 		f.write(hdrdesc, sizeof(hdrdesc));
@@ -147,14 +147,14 @@ void Engine::saveGameState(uint8 slot, const char *desc) {
 	}
 }
 
-void Engine::loadGameState(uint8 slot) {
+void Engine::loadGameState(uint8_t slot) {
 	char stateFile[20];
 	makeGameStateName(slot, stateFile);
 	File f(true);
 	if (!f.open(stateFile, _saveDir, "rb")) {
 		warning("Unable to open state file '%s'", stateFile);
 	} else {
-		uint32 id = f.readUint32BE();
+		uint32_t id = f.readUint32_tBE();
 		if (id != 'AWSV') {
 			warning("Bad savegame format");
 		} else {
@@ -162,8 +162,8 @@ void Engine::loadGameState(uint8 slot) {
 			player.stop();
 			mixer.stopAll();
 			// header
-			uint16 ver = f.readUint16BE();
-			f.readUint16BE();
+			uint16_t ver = f.readUint16_tBE();
+			f.readUint16_tBE();
 			char hdrdesc[32];
 			f.read(hdrdesc, sizeof(hdrdesc));
 			// contents

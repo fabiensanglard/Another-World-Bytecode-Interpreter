@@ -22,29 +22,29 @@
 #include "intern.h"
 
 struct SfxInstrument {
-	uint8 *data;
-	uint16 volume;
+	uint8_t *data;
+	uint16_t volume;
 };
 
 struct SfxModule {
-	const uint8 *data;
-	uint16 curPos;
-	uint8 curOrder;
-	uint8 numOrder;
-	uint8 orderTable[0x80];
+	const uint8_t *data;
+	uint16_t curPos;
+	uint8_t curOrder;
+	uint8_t numOrder;
+	uint8_t orderTable[0x80];
 	SfxInstrument samples[15];
 };
 
 struct SfxPattern {
-	uint16 note_1;
-	uint16 note_2;
-	uint16 sampleStart;
-	uint8 *sampleBuffer;
-	uint16 sampleLen;
-	uint16 loopPos;
-	uint8 *loopData;
-	uint16 loopLen;
-	uint16 sampleVolume;
+	uint16_t note_1;
+	uint16_t note_2;
+	uint16_t sampleStart;
+	uint8_t *sampleBuffer;
+	uint16_t sampleLen;
+	uint16_t loopPos;
+	uint8_t *loopData;
+	uint16_t loopLen;
+	uint16_t sampleVolume;
 };
 
 struct Mixer;
@@ -59,24 +59,24 @@ struct SfxPlayer {
 
 	void *_mutex;
 	void *_timerId;
-	uint16 _delay;
-	uint16 _resNum;
+	uint16_t _delay;
+	uint16_t _resNum;
 	SfxModule _sfxMod;
-	int16 *_markVar;
+	int16_t *_markVar;
 
 	SfxPlayer(Mixer *mix, Resource *res, System *stub);
 	void init();
 	void free();
 
-	void setEventsDelay(uint16 delay);
-	void loadSfxModule(uint16 resNum, uint16 delay, uint8 pos);
-	void prepareInstruments(const uint8 *p);
+	void setEventsDelay(uint16_t delay);
+	void loadSfxModule(uint16_t resNum, uint16_t delay, uint8_t pos);
+	void prepareInstruments(const uint8_t *p);
 	void start();
 	void stop();
 	void handleEvents();
-	void handlePattern(uint8 channel, const uint8 *patternData);
+	void handlePattern(uint8_t channel, const uint8_t *patternData);
 
-	static uint32 eventsCallback(uint32 interval, void *param);
+	static uint32_t eventsCallback(uint32_t interval, void *param);
 
 	void saveOrLoad(Serializer &ser);
 };
