@@ -56,28 +56,28 @@ struct Serializer {
 
 	struct Entry {
 		EntryType type;
-		uint8 size;
-		uint16 n;
+		uint8_t size;
+		uint16_t n;
 		void *data;
-		uint16 minVer;
-		uint16 maxVer;
+		uint16_t minVer;
+		uint16_t maxVer;
 	};
 
 	File *_stream;
 	Mode _mode;
-	uint8 *_ptrBlock;
-	uint16 _saveVer;
-	uint32 _bytesCount;
+	uint8_t *_ptrBlock;
+	uint16_t _saveVer;
+	uint32_t _bytesCount;
 	
-	Serializer(File *stream, Mode mode, uint8 *ptrBlock, uint16 saveVer = CUR_VER);
+	Serializer(File *stream, Mode mode, uint8_t *ptrBlock, uint16_t saveVer = CUR_VER);
 
 	void saveOrLoadEntries(Entry *entry);
 
 	void saveEntries(Entry *entry);
 	void loadEntries(Entry *entry);
 
-	void saveInt(uint8 es, void *p);
-	void loadInt(uint8 es, void *p);
+	void saveInt(uint8_t es, void *p);
+	void loadInt(uint8_t es, void *p);
 };
 
 #endif

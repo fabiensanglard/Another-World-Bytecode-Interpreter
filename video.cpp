@@ -22,7 +22,7 @@
 #include "sys.h"
 
 
-void Polygon::readVertices(const uint8 *p, uint16 zoom) {
+void Polygon::readVertices(const uint8_t *p, uint16_t zoom) {
 	bbw = (*p++) * zoom / 64;
 	bbh = (*p++) * zoom / 64;
 	numPoints = *p++;
@@ -44,7 +44,7 @@ void Video::init() {
 
 	paletteIdRequested = NO_PALETTE_CHANGE_REQUESTED;
 
-	uint8* tmp = (uint8 *)malloc(4*VID_PAGE_SIZE);
+	uint8_t* tmp = (uint8_t *)malloc(4*VID_PAGE_SIZE);
 	memset(tmp,0,4*VID_PAGE_SIZE);
 	
 	/*
@@ -72,7 +72,7 @@ void Video::init() {
 /*
 	This
 */
-void Video::setDataBuffer(uint8 *dataBuf, uint16 offset) {
+void Video::setDataBuffer(uint8_t *dataBuf, uint16_t offset) {
 
 	_dataBuf = dataBuf;
 	_pData.pc = dataBuf + offset;
@@ -85,9 +85,9 @@ void Video::setDataBuffer(uint8 *dataBuf, uint16 offset) {
 	 - A list of objectspace vertices, based on a delta from the first vertex.
 
 	 This is a recursive function. */
-void Video::readAndDrawPolygon(uint8 color, uint16 zoom, const Point &pt) {
+void Video::readAndDrawPolygon(uint8_t color, uint16_t zoom, const Point &pt) {
 
-	uint8 i = _pData.fetchByte();
+	uint8_t i = _pData.fetchByte();
 
 	//This is 
 	if (i >= 0xC0) {	// 0xc0 = 192
@@ -121,7 +121,7 @@ void Video::readAndDrawPolygon(uint8 color, uint16 zoom, const Point &pt) {
 
 }
 
-void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
+void Video::fillPolygon(uint16_t color, uint16_t zoom, const Point &pt) {
 
 	if (polygon.bbw == 0 && polygon.bbh == 1 && polygon.numPoints == 4) {
 		drawPoint(color, pt.x, pt.y);
@@ -129,17 +129,17 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
 		return;
 	}
 	
-	int16 x1 = pt.x - polygon.bbw / 2;
-	int16 x2 = pt.x + polygon.bbw / 2;
-	int16 y1 = pt.y - polygon.bbh / 2;
-	int16 y2 = pt.y + polygon.bbh / 2;
+	int16_t x1 = pt.x - polygon.bbw / 2;
+	int16_t x2 = pt.x + polygon.bbw / 2;
+	int16_t y1 = pt.y - polygon.bbh / 2;
+	int16_t y2 = pt.y + polygon.bbh / 2;
 
 	if (x1 > 319 || x2 < 0 || y1 > 199 || y2 < 0)
 		return;
 
 	_hliney = y1;
 	
-	uint16 i, j;
+	uint16_t i, j;
 	i = 0;
 	j = polygon.numPoints - 1;
 	
@@ -158,8 +158,8 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
 		drawFct = &Video::drawLineBlend;
 	}
 
-	uint32 cpt1 = x1 << 16;
-	uint32 cpt2 = x2 << 16;
+	uint32_t cpt1 = x1 << 16;
+	uint32_t cpt2 = x2 << 16;
 
 	while (1) {
 		polygon.numPoints -= 2;
@@ -172,9 +172,9 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
 #endif
 			break;
 		}
-		uint16 h;
-		int32 step1 = calcStep(polygon.points[j + 1], polygon.points[j], h);
-		int32 step2 = calcStep(polygon.points[i - 1], polygon.points[i], h);
+		uint16_t h;
+		int32_t step1 = calcStep(polygon.points[j + 1], polygon.points[j], h);
+		int32_t step2 = calcStep(polygon.points[i - 1], polygon.points[i], h);
 
 		++i;
 		--j;
@@ -222,25 +222,25 @@ void Video::fillPolygon(uint16 color, uint16 zoom, const Point &pt) {
     What is read from the bytecode is not a pure screnspace polygon but a polygonspace polygon.
 
 */
-void Video::readAndDrawPolygonHierarchy(uint16 zoom, const Point &pgc) {
+void Video::readAndDrawPolygonHierarchy(uint16_t zoom, const Point &pgc) {
 
 	Point pt(pgc);
 	pt.x -= _pData.fetchByte() * zoom / 64;
 	pt.y -= _pData.fetchByte() * zoom / 64;
 
-	int16 childs = _pData.fetchByte();
+	int16_t childs = _pData.fetchByte();
 	debug(DBG_VIDEO, "Video::readAndDrawPolygonHierarchy childs=%d", childs);
 
 	for ( ; childs >= 0; --childs) {
 
-		uint16 off = _pData.fetchWord();
+		uint16_t off = _pData.fetchWord();
 
 		Point po(pt);
 		po.x += _pData.fetchByte() * zoom / 64;
 		po.y += _pData.fetchByte() * zoom / 64;
 
-		uint16 color = 0xFF;
-		uint16 _bp = off;
+		uint16_t color = 0xFF;
+		uint16_t _bp = off;
 		off &= 0x7FFF;
 
 		if (_bp & 0x8000) {
@@ -248,7 +248,7 @@ void Video::readAndDrawPolygonHierarchy(uint16 zoom, const Point &pgc) {
 			_pData.pc += 2;
 		}
 
-		uint8 *bak = _pData.pc;
+		uint8_t *bak = _pData.pc;
 		_pData.pc = _dataBuf + off * 2;
 
 
@@ -261,12 +261,12 @@ void Video::readAndDrawPolygonHierarchy(uint16 zoom, const Point &pgc) {
 	
 }
 
-int32 Video::calcStep(const Point &p1, const Point &p2, uint16 &dy) {
+int32_t Video::calcStep(const Point &p1, const Point &p2, uint16_t &dy) {
 	dy = p2.y - p1.y;
 	return (p2.x - p1.x) * _interpTable[dy] * 4;
 }
 
-void Video::drawString(uint8 color, uint16 x, uint16 y, uint16 stringId) {
+void Video::drawString(uint8_t color, uint16_t x, uint16_t y, uint16_t stringId) {
 
 	const StrEntry *se = _stringsTableEng;
 
@@ -282,7 +282,7 @@ void Video::drawString(uint8 color, uint16 x, uint16 y, uint16 stringId) {
 	
 
     //Used if the string contains a return carriage.
-	uint16 xOrigin = x;
+	uint16_t xOrigin = x;
 	int len = strlen(se->str);
 	for (int i = 0; i < len; ++i) {
 
@@ -298,19 +298,19 @@ void Video::drawString(uint8 color, uint16 x, uint16 y, uint16 stringId) {
 	}
 }
 
-void Video::drawChar(uint8 character, uint16 x, uint16 y, uint8 color, uint8 *buf) {
+void Video::drawChar(uint8_t character, uint16_t x, uint16_t y, uint8_t color, uint8_t *buf) {
 	if (x <= 39 && y <= 192) {
 		
-		const uint8 *ft = _font + (character - ' ') * 8;
+		const uint8_t *ft = _font + (character - ' ') * 8;
 
-		uint8 *p = buf + x * 4 + y * 160;
+		uint8_t *p = buf + x * 4 + y * 160;
 
 		for (int j = 0; j < 8; ++j) {
-			uint8 ch = *(ft + j);
+			uint8_t ch = *(ft + j);
 			for (int i = 0; i < 4; ++i) {
-				uint8 b = *(p + i);
-				uint8 cmask = 0xFF;
-				uint8 colb = 0;
+				uint8_t b = *(p + i);
+				uint8_t cmask = 0xFF;
+				uint8_t colb = 0;
 				if (ch & 0x80) {
 					colb |= color << 4;
 					cmask &= 0x0F;
@@ -328,12 +328,12 @@ void Video::drawChar(uint8 character, uint16 x, uint16 y, uint8 color, uint8 *bu
 	}
 }
 
-void Video::drawPoint(uint8 color, int16 x, int16 y) {
+void Video::drawPoint(uint8_t color, int16_t x, int16_t y) {
 	debug(DBG_VIDEO, "drawPoint(%d, %d, %d)", color, x, y);
 	if (x >= 0 && x <= 319 && y >= 0 && y <= 199) {
-		uint16 off = y * 160 + x / 2;
+		uint16_t off = y * 160 + x / 2;
 	
-		uint8 cmasko, cmaskn;
+		uint8_t cmasko, cmaskn;
 		if (x & 1) {
 			cmaskn = 0x0F;
 			cmasko = 0xF0;
@@ -342,7 +342,7 @@ void Video::drawPoint(uint8 color, int16 x, int16 y) {
 			cmasko = 0x0F;
 		}
 
-		uint8 colb = (color << 4) | color;
+		uint8_t colb = (color << 4) | color;
 		if (color == 0x10) {
 			cmaskn &= 0x88;
 			cmasko = ~cmaskn;
@@ -350,22 +350,22 @@ void Video::drawPoint(uint8 color, int16 x, int16 y) {
 		} else if (color == 0x11) {
 			colb = *(_pagePtrs[0] + off);
 		}
-		uint8 b = *(_curPagePtr1 + off);
+		uint8_t b = *(_curPagePtr1 + off);
 		*(_curPagePtr1 + off) = (b & cmasko) | (colb & cmaskn);
 	}
 }
 
 /* Blend a line in the current framebuffer (_curPagePtr1)
 */
-void Video::drawLineBlend(int16 x1, int16 x2, uint8 color) {
+void Video::drawLineBlend(int16_t x1, int16_t x2, uint8_t color) {
 	debug(DBG_VIDEO, "drawLineBlend(%d, %d, %d)", x1, x2, color);
-	int16 xmax = MAX(x1, x2);
-	int16 xmin = MIN(x1, x2);
-	uint8 *p = _curPagePtr1 + _hliney * 160 + xmin / 2;
+	int16_t xmax = MAX(x1, x2);
+	int16_t xmin = MIN(x1, x2);
+	uint8_t *p = _curPagePtr1 + _hliney * 160 + xmin / 2;
 
-	uint16 w = xmax / 2 - xmin / 2 + 1;
-	uint8 cmaske = 0;
-	uint8 cmasks = 0;	
+	uint16_t w = xmax / 2 - xmin / 2 + 1;
+	uint8_t cmaske = 0;
+	uint8_t cmasks = 0;	
 	if (xmin & 1) {
 		--w;
 		cmasks = 0xF7;
@@ -391,15 +391,15 @@ void Video::drawLineBlend(int16 x1, int16 x2, uint8 color) {
 
 }
 
-void Video::drawLineN(int16 x1, int16 x2, uint8 color) {
+void Video::drawLineN(int16_t x1, int16_t x2, uint8_t color) {
 	debug(DBG_VIDEO, "drawLineN(%d, %d, %d)", x1, x2, color);
-	int16 xmax = MAX(x1, x2);
-	int16 xmin = MIN(x1, x2);
-	uint8 *p = _curPagePtr1 + _hliney * 160 + xmin / 2;
+	int16_t xmax = MAX(x1, x2);
+	int16_t xmin = MIN(x1, x2);
+	uint8_t *p = _curPagePtr1 + _hliney * 160 + xmin / 2;
 
-	uint16 w = xmax / 2 - xmin / 2 + 1;
-	uint8 cmaske = 0;
-	uint8 cmasks = 0;	
+	uint16_t w = xmax / 2 - xmin / 2 + 1;
+	uint8_t cmaske = 0;
+	uint8_t cmasks = 0;	
 	if (xmin & 1) {
 		--w;
 		cmasks = 0xF0;
@@ -409,7 +409,7 @@ void Video::drawLineN(int16 x1, int16 x2, uint8 color) {
 		cmaske = 0x0F;
 	}
 
-	uint8 colb = ((color & 0xF) << 4) | (color & 0xF);	
+	uint8_t colb = ((color & 0xF) << 4) | (color & 0xF);	
 	if (cmasks != 0) {
 		*p = (*p & cmasks) | (colb & 0x0F);
 		++p;
@@ -425,17 +425,17 @@ void Video::drawLineN(int16 x1, int16 x2, uint8 color) {
 	
 }
 
-void Video::drawLineP(int16 x1, int16 x2, uint8 color) {
+void Video::drawLineP(int16_t x1, int16_t x2, uint8_t color) {
 	debug(DBG_VIDEO, "drawLineP(%d, %d, %d)", x1, x2, color);
-	int16 xmax = MAX(x1, x2);
-	int16 xmin = MIN(x1, x2);
-	uint16 off = _hliney * 160 + xmin / 2;
-	uint8 *p = _curPagePtr1 + off;
-	uint8 *q = _pagePtrs[0] + off;
+	int16_t xmax = MAX(x1, x2);
+	int16_t xmin = MIN(x1, x2);
+	uint16_t off = _hliney * 160 + xmin / 2;
+	uint8_t *p = _curPagePtr1 + off;
+	uint8_t *q = _pagePtrs[0] + off;
 
-	uint8 w = xmax / 2 - xmin / 2 + 1;
-	uint8 cmaske = 0;
-	uint8 cmasks = 0;	
+	uint8_t w = xmax / 2 - xmin / 2 + 1;
+	uint8_t cmaske = 0;
+	uint8_t cmasks = 0;	
 	if (xmin & 1) {
 		--w;
 		cmasks = 0xF0;
@@ -461,8 +461,8 @@ void Video::drawLineP(int16 x1, int16 x2, uint8 color) {
 
 }
 
-uint8 *Video::getPagePtr(uint8 page) {
-	uint8 *p;
+uint8_t *Video::getPagePtr(uint8_t page) {
+	uint8_t *p;
 	if (page <= 3) {
 		p = _pagePtrs[page];
 	} else {
@@ -484,20 +484,20 @@ uint8 *Video::getPagePtr(uint8 page) {
 
 
 
-void Video::changePagePtr1(uint8 page) {
+void Video::changePagePtr1(uint8_t page) {
 	debug(DBG_VIDEO, "Video::changePagePtr1(%d)", page);
 	_curPagePtr1 = getPagePtr(page);
 }
 
 
 
-void Video::fillPage(uint8 pageId, uint8 color) {
+void Video::fillPage(uint8_t pageId, uint8_t color) {
 	debug(DBG_VIDEO, "Video::fillPage(%d, %d)", pageId, color);
-	uint8 *p = getPagePtr(pageId);
+	uint8_t *p = getPagePtr(pageId);
 
 	// Since a palette indice is coded on 4 bits, we need to duplicate the
 	// clearing color to the upper part of the byte.
-	uint8 c = (color << 4) | color;
+	uint8_t c = (color << 4) | color;
 
 
 	memset(p, c, VID_PAGE_SIZE);
@@ -518,7 +518,7 @@ void Video::fillPage(uint8 pageId, uint8 color) {
 #if TRACE_FRAMEBUFFER
 		#define SCREENSHOT_BPP 3
 int traceFrameBufferCounter=0;
-uint8 allFrameBuffers[640*400*SCREENSHOT_BPP];
+uint8_t allFrameBuffers[640*400*SCREENSHOT_BPP];
 
 #endif
 
@@ -529,15 +529,15 @@ uint8 allFrameBuffers[640*400*SCREENSHOT_BPP];
 
 /*  This opcode is used once the background of a scene has been drawn in one of the framebuffer:
 	   it is copied in the current framebuffer at the start of a new frame in order to improve performances. */
-void Video::copyPage(uint8 srcPageId, uint8 dstPageId, int16 vscroll) {
+void Video::copyPage(uint8_t srcPageId, uint8_t dstPageId, int16_t vscroll) {
 
 	debug(DBG_VIDEO, "Video::copyPage(%d, %d)", srcPageId, dstPageId);
 
 	if (srcPageId == dstPageId)
 		return;
 
-	uint8 *p;
-	uint8 *q;
+	uint8_t *p;
+	uint8_t *q;
 
 	if (srcPageId >= 0xFE || !((srcPageId &= 0xBF) & 0x80)) {
 		p = getPagePtr(srcPageId);
@@ -548,7 +548,7 @@ void Video::copyPage(uint8 srcPageId, uint8 dstPageId, int16 vscroll) {
 		p = getPagePtr(srcPageId & 3);
 		q = getPagePtr(dstPageId);
 		if (vscroll >= -199 && vscroll <= 199) {
-			uint16 h = 200;
+			uint16_t h = 200;
 			if (vscroll < 0) {
 				h += vscroll;
 				p += -vscroll * 160;
@@ -572,21 +572,21 @@ void Video::copyPage(uint8 srcPageId, uint8 dstPageId, int16 vscroll) {
 
 
 
-void Video::copyPagePtr(const uint8 *src) {
+void Video::copyPagePtr(const uint8_t *src) {
 	debug(DBG_VIDEO, "Video::copyPagePtr()");
-	uint8 *dst = _pagePtrs[0];
+	uint8_t *dst = _pagePtrs[0];
 	int h = 200;
 	while (h--) {
 		int w = 40;
 		while (w--) {
-			uint8 p[] = {
+			uint8_t p[] = {
 				*(src + 8000 * 3),
 				*(src + 8000 * 2),
 				*(src + 8000 * 1),
 				*(src + 8000 * 0)
 			};
 			for(int j = 0; j < 4; ++j) {
-				uint8 acc = 0;
+				uint8_t acc = 0;
 				for (int i = 0; i < 8; ++i) {
 					acc <<= 1;
 					acc |= (p[i & 3] & 0x80) ? 1 : 0;
@@ -602,8 +602,8 @@ void Video::copyPagePtr(const uint8 *src) {
 }
 
 /*
-uint8 *Video::allocPage() {
-	uint8 *buf = (uint8 *)malloc(VID_PAGE_SIZE);
+uint8_t *Video::allocPage() {
+	uint8_t *buf = (uint8_t *)malloc(VID_PAGE_SIZE);
 	memset(buf, 0, VID_PAGE_SIZE);
 	return buf;
 }
@@ -620,22 +620,22 @@ Note: The palettes set used to be allocated on the stack but I moved it to
       the heap so I could dump the four framebuffer and follow how
 	  frames are generated.
 */
-uint8 pal[NUM_COLORS * 3]; //3 = BYTES_PER_PIXEL
-void Video::changePal(uint8 palNum) {
+uint8_t pal[NUM_COLORS * 3]; //3 = BYTES_PER_PIXEL
+void Video::changePal(uint8_t palNum) {
 
 	if (palNum >= 32)
 		return;
 	
-	uint8 *p = res->segPalettes + palNum * 32; //colors are coded on 2bytes (565) for 16 colors = 32
+	uint8_t *p = res->segPalettes + palNum * 32; //colors are coded on 2bytes (565) for 16 colors = 32
 
 	// Moved to the heap, legacy code used to allocate the palette
 	// on the stack.
-	//uint8 pal[NUM_COLORS * 3]; //3 = BYTES_PER_PIXEL
+	//uint8_t pal[NUM_COLORS * 3]; //3 = BYTES_PER_PIXEL
 
 	for (int i = 0; i < NUM_COLORS; ++i) 
 	{
-		uint8 c1 = *(p + 0);
-		uint8 c2 = *(p + 1);
+		uint8_t c1 = *(p + 0);
+		uint8_t c2 = *(p + 1);
 		p += 2;
 		pal[i * 3 + 0] = ((c1 & 0x0F) << 2) | ((c1 & 0x0F) >> 2); // r
 		pal[i * 3 + 1] = ((c2 & 0xF0) >> 2) | ((c2 & 0xF0) >> 6); // g
@@ -647,7 +647,7 @@ void Video::changePal(uint8 palNum) {
 
 
 	#if TRACE_PALETTE
-	printf("\nuint8 dumpPalette[48] = {\n");
+	printf("\nuint8_t dumpPalette[48] = {\n");
 	for (int i = 0; i < NUM_COLORS; ++i) 
 	{
 		printf("0x%X,0x%X,0x%X,",pal[i * 3 + 0],pal[i * 3 + 1],pal[i * 3 + 2]);
@@ -661,7 +661,7 @@ void Video::changePal(uint8 palNum) {
 #endif
 }
 
-void Video::updateDisplay(uint8 pageId) {
+void Video::updateDisplay(uint8_t pageId) {
 
 	debug(DBG_VIDEO, "Video::updateDisplay(%d)", pageId);
 
@@ -690,7 +690,7 @@ void Video::updateDisplay(uint8 pageId) {
 }
 
 void Video::saveOrLoad(Serializer &ser) {
-	uint8 mask = 0;
+	uint8_t mask = 0;
 	if (ser._mode == Serializer::SM_SAVE) {
 		for (int i = 0; i < 4; ++i) {
 			if (_pagePtrs[i] == _curPagePtr1)
@@ -726,7 +726,7 @@ void Video::saveOrLoad(Serializer &ser) {
 #if TRACE_FRAMEBUFFER
 
 
-uint8 allPalettesDump[][48] = {
+uint8_t allPalettesDump[][48] = {
 
 
 {
@@ -802,7 +802,7 @@ uint8 allPalettesDump[][48] = {
 
 
 #include "png.h"
-int GL_FCS_SaveAsSpecifiedPNG(char* path, uint8* pixels, int depth=8, int format=PNG_COLOR_TYPE_RGB)
+int GL_FCS_SaveAsSpecifiedPNG(char* path, uint8_t* pixels, int depth=8, int format=PNG_COLOR_TYPE_RGB)
 {
 	FILE * fp;
 	png_structp png_ptr = NULL;
@@ -882,16 +882,16 @@ int GL_FCS_SaveAsSpecifiedPNG(char* path, uint8* pixels, int depth=8, int format
 
 
 
-void writeLine(uint8 *dst,uint8 *src,int size)
+void writeLine(uint8_t *dst,uint8_t *src,int size)
 {
-	uint8* dumpPalette; 
+	uint8_t* dumpPalette; 
 
 	if (!dumpPaletteCursor)
 		dumpPalette = allPalettesDump[dumpPaletteCursor];
 	else
 	  dumpPalette = pal;
 
-	for( uint8 twoPixels = 0 ; twoPixels < size ; twoPixels++)
+	for( uint8_t twoPixels = 0 ; twoPixels < size ; twoPixels++)
 	{
 		int pixelIndex0 = (*src & 0xF0) >> 4;
 		pixelIndex0 &= 0x10 -1;
@@ -916,7 +916,7 @@ void writeLine(uint8 *dst,uint8 *src,int size)
 	}
 }
 
-void Video::dumpFrameBuffer(uint8 *src,uint8 *dst, int x,int y)
+void Video::dumpFrameBuffer(uint8_t *src,uint8_t *dst, int x,int y)
 {
 
 	for (int line=199 ; line >= 0 ; line--)
@@ -945,7 +945,7 @@ void Video::dumpFrameBuffers(char* comment)
 	//
 	
 	/*
-	uint8* offScreen = sys->getOffScreenFramebuffer();
+	uint8_t* offScreen = sys->getOffScreenFramebuffer();
 	for(int i=0 ; i < 200 ; i++)
 		writeLine(allFrameBuffers+320*3+640*i*3 + 200*640*3,  offScreen+320*i/2  ,  160);
 		*/
@@ -964,7 +964,7 @@ void Video::dumpFrameBuffers(char* comment)
 #define IMAGE_WIDTH 640
 #define IMAGE_HEIGHT 400
 
-    uint8 tga_header[18];
+    uint8_t tga_header[18];
     memset(tga_header, 0, 18);
     tga_header[2] = 2;
     tga_header[12] = (IMAGE_WIDTH & 0x00FF);
@@ -979,8 +979,8 @@ void Video::dumpFrameBuffers(char* comment)
 	char path[256];
 	sprintf(path,"test%d.tga",traceFrameBufferCounter);
     FILE* pScreenshot = fopen(path, "wb");
-    fwrite(&tga_header, 18, sizeof(uint8), pScreenshot);
-    fwrite(allFrameBuffers, IMAGE_WIDTH * IMAGE_HEIGHT,SCREENSHOT_BPP * sizeof(uint8),pScreenshot);
+    fwrite(&tga_header, 18, sizeof(uint8_t), pScreenshot);
+    fwrite(allFrameBuffers, IMAGE_WIDTH * IMAGE_HEIGHT,SCREENSHOT_BPP * sizeof(uint8_t),pScreenshot);
     fclose(pScreenshot);
 	*/
 
@@ -997,18 +997,18 @@ void Video::dumpFrameBuffers(char* comment)
 
 
 
-uint8 bgPalette[48] = {
+uint8_t bgPalette[48] = {
 0x8,0x8,0xC,0xC,0xC,0x15,0xC,0x11,0x1D,0x15,0x2A,0x3F,0x1D,0x19,0x19,0x37,0x2E,0x2A,0x26,0x1D,0x1D,0x37,0x26,0x22,0x22,0xC,0x0,0x26,0x33,0x3F,0x11,0x11,0x15,0x11,0x15,0x1D,0x15,0x19,0x26,0x15,0x1D,0x37,0x0,0x26,0x3F,0x2E,0x15,0x0,};
-void bgWriteLine(uint8 *dst,uint8 *src,int size)
+void bgWriteLine(uint8_t *dst,uint8_t *src,int size)
 {
-	uint8* dumpPalette; 
+	uint8_t* dumpPalette; 
 
 //	if (!dumpPaletteCursor)
 	//	dumpPalette = allPalettesDump[dumpPaletteCursor];
 //	else
 	  dumpPalette = bgPalette;
 
-	for( uint8 twoPixels = 0 ; twoPixels < size ; twoPixels++)
+	for( uint8_t twoPixels = 0 ; twoPixels < size ; twoPixels++)
 	{
 		int pixelIndex0 = (*src & 0xF0) >> 4;
 		pixelIndex0 &= 0x10 -1;
@@ -1033,7 +1033,7 @@ void bgWriteLine(uint8 *dst,uint8 *src,int size)
 	}
 }
 
-void bgDumpFrameBuffer(uint8 *src,uint8 *dst, int x,int y)
+void bgDumpFrameBuffer(uint8_t *src,uint8_t *dst, int x,int y)
 {
 
 	for (int line=199 ; line >= 0 ; line--)
@@ -1044,7 +1044,7 @@ void bgDumpFrameBuffer(uint8 *src,uint8 *dst, int x,int y)
 }
 
 #include "png.h"
-int bgSaveAsSpecifiedPNG(char* path, uint8* pixels, int depth=8, int format=PNG_COLOR_TYPE_RGB)
+int bgSaveAsSpecifiedPNG(char* path, uint8_t* pixels, int depth=8, int format=PNG_COLOR_TYPE_RGB)
 {
 	FILE * fp;
 	png_structp png_ptr = NULL;
@@ -1124,7 +1124,7 @@ void Video::dumpBackGroundBuffer()
 	if (_curPagePtr1 != _pagePtrs[0])
 		return;
 
-	uint8 bgBuffer[320*200*3];
+	uint8_t bgBuffer[320*200*3];
 	bgDumpFrameBuffer(_curPagePtr1,bgBuffer,0,0);
 
 

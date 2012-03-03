@@ -40,7 +40,7 @@ struct Engine {
 	SfxPlayer player;
 	Video video;
 	const char *_dataDir, *_saveDir;
-	uint8 _stateSlot;
+	uint8_t _stateSlot;
 
 	Engine(System *stub, const char *dataDir, const char *saveDir);
 	~Engine();
@@ -50,9 +50,9 @@ struct Engine {
 	void finish();
 	void processInput();
 	
-	void makeGameStateName(uint8 slot, char *buf);
-	void saveGameState(uint8 slot, const char *desc);
-	void loadGameState(uint8 slot);
+	void makeGameStateName(uint8_t slot, char *buf);
+	void saveGameState(uint8_t slot, const char *desc);
+	void loadGameState(uint8_t slot);
 	const char* getDataDir();
 };
 

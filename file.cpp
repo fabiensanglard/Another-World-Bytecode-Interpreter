@@ -25,9 +25,9 @@ struct File_impl {
 	File_impl() : _ioErr(false) {}
 	virtual bool open(const char *path, const char *mode) = 0;
 	virtual void close() = 0;
-	virtual void seek(int32 off) = 0;
-	virtual void read(void *ptr, uint32 size) = 0;
-	virtual void write(void *ptr, uint32 size) = 0;
+	virtual void seek(int32_t off) = 0;
+	virtual void read(void *ptr, uint32_t size) = 0;
+	virtual void write(void *ptr, uint32_t size) = 0;
 };
 
 struct stdFile : File_impl {
@@ -44,22 +44,22 @@ struct stdFile : File_impl {
 			_fp = 0;
 		}
 	}
-	void seek(int32 off) {
+	void seek(int32_t off) {
 		if (_fp) {
 			fseek(_fp, off, SEEK_SET);
 		}
 	}
-	void read(void *ptr, uint32 size) {
+	void read(void *ptr, uint32_t size) {
 		if (_fp) {
-			uint32 r = fread(ptr, 1, size, _fp);
+			uint32_t r = fread(ptr, 1, size, _fp);
 			if (r != size) {
 				_ioErr = true;
 			}
 		}
 	}
-	void write(void *ptr, uint32 size) {
+	void write(void *ptr, uint32_t size) {
 		if (_fp) {
-			uint32 r = fwrite(ptr, 1, size, _fp);
+			uint32_t r = fwrite(ptr, 1, size, _fp);
 			if (r != size) {
 				_ioErr = true;
 			}
@@ -81,22 +81,22 @@ struct zlibFile : File_impl {
 			_fp = 0;
 		}
 	}
-	void seek(int32 off) {
+	void seek(int32_t off) {
 		if (_fp) {
 			gzseek(_fp, off, SEEK_SET);
 		}
 	}
-	void read(void *ptr, uint32 size) {
+	void read(void *ptr, uint32_t size) {
 		if (_fp) {
-			uint32 r = gzread(_fp, ptr, size);
+			uint32_t r = gzread(_fp, ptr, size);
 			if (r != size) {
 				_ioErr = true;
 			}
 		}
 	}
-	void write(void *ptr, uint32 size) {
+	void write(void *ptr, uint32_t size) {
 		if (_fp) {
-			uint32 r = gzwrite(_fp, ptr, size);
+			uint32_t r = gzwrite(_fp, ptr, size);
 			if (r != size) {
 				_ioErr = true;
 			}
@@ -139,46 +139,46 @@ bool File::ioErr() const {
 	return _impl->_ioErr;
 }
 
-void File::seek(int32 off) {
+void File::seek(int32_t off) {
 	_impl->seek(off);
 }
 
-void File::read(void *ptr, uint32 size) {
+void File::read(void *ptr, uint32_t size) {
 	_impl->read(ptr, size);
 }
 
-uint8 File::readByte() {
-	uint8 b;
+uint8_t File::readByte() {
+	uint8_t b;
 	read(&b, 1);
 	return b;
 }
 
-uint16 File::readUint16BE() {
-	uint8 hi = readByte();
-	uint8 lo = readByte();
+uint16_t File::readUint16_tBE() {
+	uint8_t hi = readByte();
+	uint8_t lo = readByte();
 	return (hi << 8) | lo;
 }
 
-uint32 File::readUint32BE() {
-	uint16 hi = readUint16BE();
-	uint16 lo = readUint16BE();
+uint32_t File::readUint32_tBE() {
+	uint16_t hi = readUint16_tBE();
+	uint16_t lo = readUint16_tBE();
 	return (hi << 16) | lo;
 }
 
-void File::write(void *ptr, uint32 size) {
+void File::write(void *ptr, uint32_t size) {
 	_impl->write(ptr, size);
 }
 
-void File::writeByte(uint8 b) {
+void File::writeByte(uint8_t b) {
 	write(&b, 1);
 }
 
-void File::writeUint16BE(uint16 n) {
+void File::writeUint16_tBE(uint16_t n) {
 	writeByte(n >> 8);
 	writeByte(n & 0xFF);
 }
 
-void File::writeUint32BE(uint32 n) {
-	writeUint16BE(n >> 16);
-	writeUint16BE(n & 0xFFFF);
+void File::writeUint32_tBE(uint32_t n) {
+	writeUint16_tBE(n >> 16);
+	writeUint16_tBE(n & 0xFFFF);
 }

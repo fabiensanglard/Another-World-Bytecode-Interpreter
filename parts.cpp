@@ -17,7 +17,7 @@
 	That would make sense since protection screen and cinematic game parts do not load MEMLIST_PART_VIDEO2.
 
 */
-const uint16 memListParts[GAME_NUM_PARTS][4] = {
+const uint16_t memListParts[GAME_NUM_PARTS][4] = {
 	{ 0x14, 0x15, 0x16, 0x00 }, // protection screens
 	{ 0x17, 0x18, 0x19, 0x00 }, // introduction cinematic
 	{ 0x1A, 0x1B, 0x1C, 0x11 },
