@@ -153,15 +153,15 @@ uint8_t File::readByte() {
 	return b;
 }
 
-uint16_t File::readUint16_tBE() {
+uint16_t File::readUint16BE() {
 	uint8_t hi = readByte();
 	uint8_t lo = readByte();
 	return (hi << 8) | lo;
 }
 
-uint32_t File::readUint32_tBE() {
-	uint16_t hi = readUint16_tBE();
-	uint16_t lo = readUint16_tBE();
+uint32_t File::readUint32BE() {
+	uint16_t hi = readUint16BE();
+	uint16_t lo = readUint16BE();
 	return (hi << 16) | lo;
 }
 
@@ -173,12 +173,12 @@ void File::writeByte(uint8_t b) {
 	write(&b, 1);
 }
 
-void File::writeUint16_tBE(uint16_t n) {
+void File::writeUint16BE(uint16_t n) {
 	writeByte(n >> 8);
 	writeByte(n & 0xFF);
 }
 
-void File::writeUint32_tBE(uint32_t n) {
-	writeUint16_tBE(n >> 16);
-	writeUint16_tBE(n & 0xFFFF);
+void File::writeUint32BE(uint32_t n) {
+	writeUint16BE(n >> 16);
+	writeUint16BE(n & 0xFFFF);
 }

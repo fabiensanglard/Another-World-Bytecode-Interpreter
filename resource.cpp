@@ -85,15 +85,15 @@ void Resource::readEntries() {
 		assert(_numMemList < ARRAYSIZE(_memList));
 		memEntry->state = f.readByte();
 		memEntry->type = f.readByte();
-		memEntry->bufPtr = 0; f.readUint16_tBE();
-		memEntry->unk4 = f.readUint16_tBE();
+		memEntry->bufPtr = 0; f.readUint16BE();
+		memEntry->unk4 = f.readUint16BE();
 		memEntry->rankNum = f.readByte();
 		memEntry->bankId = f.readByte();
-		memEntry->bankOffset = f.readUint32_tBE();
-		memEntry->unkC = f.readUint16_tBE();
-		memEntry->packedSize = f.readUint16_tBE();
-		memEntry->unk10 = f.readUint16_tBE();
-		memEntry->size = f.readUint16_tBE();
+		memEntry->bankOffset = f.readUint32BE();
+		memEntry->unkC = f.readUint16BE();
+		memEntry->packedSize = f.readUint16BE();
+		memEntry->unk10 = f.readUint16BE();
+		memEntry->size = f.readUint16BE();
 
 		//Memory tracking
 		if (memEntry->packedSize==memEntry->size)
