@@ -61,7 +61,7 @@ void Serializer::saveEntries(Entry *entry) {
 				}
 				break;
 			case SET_PTR:
-				_stream->writeUint32_tBE(*(uint8_t **)(entry->data) - _ptrBlock);
+				_stream->writeUint32BE(*(uint8_t **)(entry->data) - _ptrBlock);
 				_bytesCount += 4;
 				break;
 			case SET_END:
@@ -94,7 +94,7 @@ void Serializer::loadEntries(Entry *entry) {
 				}
 				break;
 			case SET_PTR:
-				*(uint8_t **)(entry->data) = _ptrBlock + _stream->readUint32_tBE();
+				*(uint8_t **)(entry->data) = _ptrBlock + _stream->readUint32BE();
 				_bytesCount += 4;
 				break;
 			case SET_END:
@@ -110,10 +110,10 @@ void Serializer::saveInt(uint8_t es, void *p) {
 		_stream->writeByte(*(uint8_t *)p);
 		break;
 	case 2:
-		_stream->writeUint16_tBE(*(uint16_t *)p);
+		_stream->writeUint16BE(*(uint16_t *)p);
 		break;
 	case 4:
-		_stream->writeUint32_tBE(*(uint32_t *)p);
+		_stream->writeUint32BE(*(uint32_t *)p);
 		break;
 	}
 }
@@ -124,10 +124,10 @@ void Serializer::loadInt(uint8_t es, void *p) {
 		*(uint8_t *)p = _stream->readByte();
 		break;
 	case 2:
-		*(uint16_t *)p = _stream->readUint16_tBE();
+		*(uint16_t *)p = _stream->readUint16BE();
 		break;
 	case 4:
-		*(uint32_t *)p = _stream->readUint32_tBE();
+		*(uint32_t *)p = _stream->readUint32BE();
 		break;
 	}
 }
