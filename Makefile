@@ -20,7 +20,7 @@ DEPS = $(SRCS:.cpp=.d)
 game: $(OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(SDL_LIBS) -lz
 
-.cpp.o:
+%.o: %.cpp
 	$(CXX) $(CXXFLAGS) -MMD -c $< -o $*.o
 
 clean:
