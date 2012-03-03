@@ -117,7 +117,12 @@ void Resource::readEntries() {
 			break;
 		}
 
-		debug(DBG_RES,"R:0x%X, %s size=%5d (compacted gain=%2.0f%%)",resourceCounter,resTypeToString(memEntry->type),memEntry->size,(memEntry->size-memEntry->packedSize)/(float)memEntry->size*100);	
+		debug(DBG_RES, "R:0x%02X, %-17s size=%5d (compacted gain=%2.0f%%)",
+				resourceCounter,
+				resTypeToString(memEntry->type),
+				memEntry->size,
+				memEntry->size ? (memEntry->size-memEntry->packedSize) / (float)memEntry->size * 100.0f : 0.0f);
+
 		resourceCounter++;
 
 		_numMemList++;
@@ -138,14 +143,14 @@ void Resource::readEntries() {
 
 	debug(DBG_RES,"\n");
 	for(int i=0 ; i < 6 ; i++)
-		debug(DBG_RES,"Total %s unpacked size: %7d (%2.0f%% of total unpacked size) packedSize %7d (%2.0f%% of floppy space) gain:(%2.0f%%)"
-		,resTypeToString(i)
-	,resourceSizeStats[i][RES_SIZE]
-	,resourceSizeStats[i][RES_SIZE]/(float)resourceSizeStats[STATS_TOTAL_SIZE][RES_SIZE]*100
-	,resourceSizeStats[i][RES_COMPRESSED]
-	,resourceSizeStats[i][RES_COMPRESSED]/(float)resourceSizeStats[STATS_TOTAL_SIZE][RES_COMPRESSED]*100
-	,(resourceSizeStats[i][RES_SIZE]-resourceSizeStats[i][RES_COMPRESSED])/(float)resourceSizeStats[i][RES_SIZE]*100
-		);
+		debug(DBG_RES,"Total %-17s unpacked size: %7d (%2.0f%% of total unpacked size) packedSize %7d (%2.0f%% of floppy space) gain:(%2.0f%%)",
+			resTypeToString(i),
+			resourceSizeStats[i][RES_SIZE],
+			resourceSizeStats[i][RES_SIZE] / (float)resourceSizeStats[STATS_TOTAL_SIZE][RES_SIZE] * 100.0f,
+			resourceSizeStats[i][RES_COMPRESSED],
+			resourceSizeStats[i][RES_COMPRESSED] / (float)resourceSizeStats[STATS_TOTAL_SIZE][RES_COMPRESSED] * 100.0f,
+			(resourceSizeStats[i][RES_SIZE] - resourceSizeStats[i][RES_COMPRESSED]) / (float)resourceSizeStats[i][RES_SIZE] * 100.0f);
+
 	debug(DBG_RES,"Note: Damn you sound compression rate!");
 
 	debug(DBG_RES,"\nTotal bank files:              %d",resourceUnitStats[STATS_TOTAL_SIZE][RES_SIZE]+resourceUnitStats[STATS_TOTAL_SIZE][RES_COMPRESSED]);
