@@ -271,7 +271,7 @@ void SDLStub::startAudio(AudioCallback callback, void *param) {
 	memset(&desired, 0, sizeof(desired));
 
 	desired.freq = SOUND_SAMPLE_RATE;
-	desired.format = AUDIO_S8;
+	desired.format = AUDIO_U8;
 	desired.channels = 1;
 	desired.samples = 2048;
 	desired.callback = callback;

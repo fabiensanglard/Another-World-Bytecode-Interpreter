@@ -93,6 +93,7 @@ void Mixer::stopAll() {
 // to synchronize with a mutex so the channels remain stable during the execution
 // of this method.
 void Mixer::mix(int8 *buf, int len) {
+	int8 *pBuf;
 
 	MutexStack(sys, _mutex);
 
@@ -104,7 +105,7 @@ void Mixer::mix(int8 *buf, int len) {
 		if (!ch->active) 
 			continue;
 
-		int8 *pBuf = buf;
+		pBuf = buf;
 		for (int j = 0; j < len; ++j, ++pBuf) {
 
 			uint16 p1, p2;
@@ -137,6 +138,14 @@ void Mixer::mix(int8 *buf, int len) {
 			*pBuf = addclamp(*pBuf, (int)b * ch->volume / 0x40);  //0x40=64
 		}
 		
+	}
+
+	// Convert signed 8-bit PCM to unsigned 8-bit PCM. The
+	// current version of SDL hangs when using signed 8-bit
+	// PCM in combination with the PulseAudio driver.
+	pBuf = buf;
+	for (int j = 0; j < len; ++j, ++pBuf) {
+		*(uint8 *)pBuf = (*pBuf + 128);
 	}
 }
 
