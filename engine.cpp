@@ -126,9 +126,9 @@ void Engine::saveGameState(uint8_t slot, const char *desc) {
 		warning("Unable to save state file '%s'", stateFile);
 	} else {
 		// header
-		f.writeUint32_tBE('AWSV');
-		f.writeUint16_tBE(Serializer::CUR_VER);
-		f.writeUint16_tBE(0);
+		f.writeUint32BE('AWSV');
+		f.writeUint16BE(Serializer::CUR_VER);
+		f.writeUint16BE(0);
 		char hdrdesc[32];
 		strncpy(hdrdesc, desc, sizeof(hdrdesc) - 1);
 		f.write(hdrdesc, sizeof(hdrdesc));
@@ -154,7 +154,7 @@ void Engine::loadGameState(uint8_t slot) {
 	if (!f.open(stateFile, _saveDir, "rb")) {
 		warning("Unable to open state file '%s'", stateFile);
 	} else {
-		uint32_t id = f.readUint32_tBE();
+		uint32_t id = f.readUint32BE();
 		if (id != 'AWSV') {
 			warning("Bad savegame format");
 		} else {
@@ -162,8 +162,8 @@ void Engine::loadGameState(uint8_t slot) {
 			player.stop();
 			mixer.stopAll();
 			// header
-			uint16_t ver = f.readUint16_tBE();
-			f.readUint16_tBE();
+			uint16_t ver = f.readUint16BE();
+			f.readUint16BE();
 			char hdrdesc[32];
 			f.read(hdrdesc, sizeof(hdrdesc));
 			// contents
