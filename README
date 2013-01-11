@@ -6,7 +6,7 @@ interpreter codebase. This work is based on:
 - Eric Chahi's assembly code.
 
 I cleaned up a lot of the code, removing cryptic hexadecimal notation
-with meaninful macros name. I also cleanup a lot of the code so it has a 
+with meaningful macros name. I also cleanup a lot of the code so it has a 
 C/C++ philosophy instead of an assembly structure.
 
 I also created a Visual Studio 2010 project.
