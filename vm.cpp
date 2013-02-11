@@ -680,7 +680,7 @@ void VirtualMachine::snd_playSound(uint16_t resNum, uint8_t freq, uint8_t vol, u
 	
 	MemEntry *me = &res->_memList[resNum];
 
-	if (me->state != 1)
+	if (me->state != MEMENTRY_STATE_LOADED)
 		return;
 
 	
