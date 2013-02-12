@@ -287,33 +287,36 @@ static void dump_condJmp (FILE* f, uint8_t* buffer, int& pc) {
 	switch (subopcode & 7) {
 	case 0:	// jz
 //		expr = (b == a);
-    fprintf(f, "  je [0x%02X], ", b);
+    fprintf(f, "  je [");
 		break;
 	case 1: // jnz
 //		expr = (b != a);
-    fprintf(f, "  jne [0x%02X], ", b);
+    fprintf(f, "  jne [");
 		break;
 	case 2: // jg
 //		expr = (b > a);
-    fprintf(f, "  jg [0x%02X], ", b);
+    fprintf(f, "  jg [");
 		break;
 	case 3: // jge
 //		expr = (b >= a);
-    fprintf(f, "  jge [0x%02X], ", b);
+    fprintf(f, "  jge [");
 		break;
 	case 4: // jl
 //		expr = (b < a);
-    fprintf(f, "  jl [0x%02X], ", b);
+    fprintf(f, "  jl [");
 		break;
 	case 5: // jle
 //		expr = (b <= a);
-    fprintf(f, "  jle [0x%02X], ", b);
+    fprintf(f, "  jle [");
 		break;
 	default:
     fprintf(f, "< conditional jmp: invalid condition %d >\n", (subopcode & 7));
 		break;
     return;
 	}
+
+  printVariableName(f, b);
+  fprintf(f, "], ");
 
 	if (subopcode & 0x80) {
 		fprintf(f, "[");
@@ -379,31 +382,43 @@ static void dump_drawString (FILE* f, uint8_t* buffer, int& pc) {
 static void dump_sub (FILE* f, uint8_t* buffer, int& pc) {
 	uint8_t i = fetchByte(buffer, pc);
 	uint8_t j = fetchByte(buffer, pc);
-	fprintf(f, "  sub [0x%02X], [0x%02X]\n", i, j);
+	fprintf(f, "  sub [");
+  printVariableName(f, i);
+	fprintf(f, "], [");
+  printVariableName(f, j);
+	fprintf(f, "]\n");
 }
 
 static void dump_and (FILE* f, uint8_t* buffer, int& pc) {
 	uint8_t variableId = fetchByte(buffer, pc);
 	uint16_t n = fetchWord(buffer, pc);
-	fprintf(f, "  and [0x%02X], 0x%04X\n", variableId, n);
+	fprintf(f, "  and [");
+  printVariableName(f, variableId);
+	fprintf(f, "], 0x%04X\n", n);
 }
 
 static void dump_or (FILE* f, uint8_t* buffer, int& pc) {
 	uint8_t variableId = fetchByte(buffer, pc);
 	uint16_t value = fetchWord(buffer, pc);
-	fprintf(f, "  or [0x%02X], 0x%04X\n", variableId, value);
+	fprintf(f, "  or [");
+  printVariableName(f, variableId);
+	fprintf(f, "], 0x%04X\n", value);
 }
 
 static void dump_shl (FILE* f, uint8_t* buffer, int& pc) {
 	uint8_t variableId = fetchByte(buffer, pc);
 	uint16_t leftShiftValue = fetchWord(buffer, pc);
-	fprintf(f, "  shl [0x%02X], 0x%04X\n", variableId, leftShiftValue);
+	fprintf(f, "  shl [");
+  printVariableName(f, variableId);
+	fprintf(f, "], 0x%04X\n", leftShiftValue);
 }
 
 static void dump_shr (FILE* f, uint8_t* buffer, int& pc) {
 	uint8_t variableId = fetchByte(buffer, pc);
 	uint16_t rightShiftValue = fetchWord(buffer, pc);
-	fprintf(f, "  shr [0x%02X], 0x%04X\n", variableId, rightShiftValue);
+	fprintf(f, "  shr [");
+  printVariableName(f, variableId);
+	fprintf(f, "], 0x%04X\n", rightShiftValue);
 }
 
 static void dump_playSound (FILE* f, uint8_t* buffer, int& pc) {
