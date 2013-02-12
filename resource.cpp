@@ -23,6 +23,7 @@
 #include "video.h"
 #include "util.h"
 #include "parts.h"
+#include "vm.h"
 
 Resource::Resource(Video *vid, const char *dataDir) 
 	: video(vid), _dataDir(dataDir), currentPartId(0) {
@@ -157,6 +158,377 @@ void Resource::readEntries() {
 	for(int i=0 ; i < 6 ; i++)
 		debug(DBG_RES,"Total %-17s files: %3d",resTypeToString(i),resourceUnitStats[i][RES_SIZE]+resourceUnitStats[i][RES_COMPRESSED]);
 
+}
+
+void Resource::dumpBinary(MemEntry* me, uint8_t* buffer, char* filename) {
+  FILE* f = fopen(filename, "wb");
+
+  //dump it!
+  for (int p=0; p < me->size; p++){
+    fprintf(f, "%c", buffer[p]);
+  }
+  fclose(f);  
+}
+
+static uint8_t fetchByte(uint8_t* buffer, int& pc){
+  uint8_t ret = buffer[pc];
+  pc++;
+  return ret;
+}
+
+static uint16_t fetchWord(uint8_t* buffer, int& pc){
+  uint16_t ret = 256*buffer[pc] + buffer[pc+1];//TODO: check endianess!
+  pc+=2;
+  return ret;
+}
+
+static void printVariableName(FILE* f, uint8_t id){
+  switch(id){
+    case VM_VARIABLE_RANDOM_SEED:
+      fprintf(f, "RANDOM_SEED"); break;
+    case VM_VARIABLE_LAST_KEYCHAR:
+      fprintf(f, "LAST_KEYCHAR"); break;
+    case VM_VARIABLE_HERO_POS_UP_DOWN:
+      fprintf(f, "HERO_POS_UP_DOWN"); break;
+    case VM_VARIABLE_MUS_MARK:
+      fprintf(f, "MUS_MARK"); break;
+    case VM_VARIABLE_SCROLL_Y:
+      fprintf(f, "SCROLL_Y"); break;
+    case VM_VARIABLE_HERO_ACTION:
+      fprintf(f, "HERO_ACTION"); break;
+    case VM_VARIABLE_HERO_POS_JUMP_DOWN:
+      fprintf(f, "HERO_POS_JUMP_DOWN"); break;
+    case VM_VARIABLE_HERO_POS_LEFT_RIGHT:
+      fprintf(f, "HERO_POS_LEFT_RIGHT"); break;
+    case VM_VARIABLE_HERO_POS_MASK:
+      fprintf(f, "HERO_POS_MASK"); break;
+    case VM_VARIABLE_HERO_ACTION_POS_MASK:
+      fprintf(f, "HERO_ACTION_POS_MASK"); break;
+    case VM_VARIABLE_PAUSE_SLICES:
+      fprintf(f, "PAUSE_SLICES"); break;
+    default:
+      fprintf(f, "0x%02X", id); break;
+  }
+}
+
+static void dump_movConst(FILE* f, uint8_t* buffer, int& pc) {
+	uint8_t variableId = fetchByte(buffer, pc);
+	int16_t value = fetchWord(buffer, pc);
+	fprintf(f, "  movConst [");
+  printVariableName(f, variableId);
+	fprintf(f, "], 0x%04X\n", value);
+}
+
+static void dump_mov(FILE* f, uint8_t* buffer, int& pc) {
+	uint8_t dstVariableId = fetchByte(buffer, pc);
+	uint8_t srcVariableId = fetchByte(buffer, pc);	
+	fprintf(f, "  mov [");
+  printVariableName(f, dstVariableId);
+	fprintf(f, "], [");
+  printVariableName(f, srcVariableId);
+	fprintf(f, "]\n");
+}
+
+static void dump_add(FILE* f, uint8_t* buffer, int& pc) {
+	uint8_t dstVariableId = fetchByte(buffer, pc);
+	uint8_t srcVariableId = fetchByte(buffer, pc);
+	fprintf(f, "  add [");
+  printVariableName(f, dstVariableId);
+	fprintf(f, "], [");
+  printVariableName(f, srcVariableId);
+	fprintf(f, "]\n");
+}
+
+static void dump_addConst(FILE* f, uint8_t* buffer, int& pc) {
+	uint8_t variableId = fetchByte(buffer, pc);
+	int16_t value = fetchWord(buffer, pc);
+	fprintf(f, "  addConst [");
+  printVariableName(f, variableId);
+	fprintf(f, "], 0x%04X\n", value);
+}
+
+static void dump_call(FILE* f, uint8_t* buffer, int& pc) {
+	uint16_t offset = fetchWord(buffer, pc);
+	fprintf(f, "  call 0x%04X\n", offset);
+}
+
+static void dump_ret(FILE* f, uint8_t* buffer, int& pc) {
+	fprintf(f, "  ret\n");
+}
+
+static void dump_pauseThread(FILE* f, uint8_t* buffer, int& pc) {
+	fprintf(f, "  pauseThread\n");
+}
+
+static void dump_jmp (FILE* f, uint8_t* buffer, int& pc) {
+	uint16_t pcOffset = fetchWord(buffer, pc);
+	fprintf(f, "  jmp 0x%04X\n", pcOffset);
+}
+
+static void dump_setSetVect (FILE* f, uint8_t* buffer, int& pc) {
+	uint8_t threadId = fetchByte(buffer, pc);
+	uint16_t pcOffsetRequested = fetchWord(buffer, pc);
+	fprintf(f, "  setSetVect threadid:0x%02X, offset:0x%04X\n", threadId, pcOffsetRequested);
+}
+
+static void dump_djnz (FILE* f, uint8_t* buffer, int& pc) {
+	uint8_t i = fetchByte(buffer, pc);
+	uint16_t pcOffset = fetchWord(buffer, pc);
+	fprintf(f, "  djnz [");
+  printVariableName(f, i);
+	fprintf(f, "], 0x%04X\n", pcOffset);
+}
+
+static void dump_condJmp (FILE* f, uint8_t* buffer, int& pc) {
+	uint8_t subopcode = fetchByte(buffer, pc);
+	uint8_t b = fetchByte(buffer, pc); //[b]
+	uint8_t c = fetchByte(buffer, pc);	
+
+	switch (subopcode & 7) {
+	case 0:	// jz
+//		expr = (b == a);
+    fprintf(f, "  je [0x%02X], ", b);
+		break;
+	case 1: // jnz
+//		expr = (b != a);
+    fprintf(f, "  jne [0x%02X], ", b);
+		break;
+	case 2: // jg
+//		expr = (b > a);
+    fprintf(f, "  jg [0x%02X], ", b);
+		break;
+	case 3: // jge
+//		expr = (b >= a);
+    fprintf(f, "  jge [0x%02X], ", b);
+		break;
+	case 4: // jl
+//		expr = (b < a);
+    fprintf(f, "  jl [0x%02X], ", b);
+		break;
+	case 5: // jle
+//		expr = (b <= a);
+    fprintf(f, "  jle [0x%02X], ", b);
+		break;
+	default:
+    fprintf(f, "< conditional jmp: invalid condition %d >\n", (subopcode & 7));
+		break;
+    return;
+	}
+
+	if (subopcode & 0x80) {
+		fprintf(f, "[");
+    printVariableName(f, c);
+		fprintf(f, "]");
+	} else if (subopcode & 0x40) {
+    fprintf(f, "0x%04X", c * 256 + fetchByte(buffer, pc));
+	} else {
+		fprintf(f, "0x%02X", c);
+	}
+
+	uint16_t offset = fetchWord(buffer, pc);
+  fprintf(f, ", 0x%04X\n", offset);
+}
+
+static void dump_setPalette (FILE* f, uint8_t* buffer, int& pc) {
+	uint16_t paletteId = fetchWord(buffer, pc);
+	fprintf(f, "  changePalette id:0x%04X\n", paletteId);
+}
+
+static void dump_resetThread (FILE* f, uint8_t* buffer, int& pc) {
+	uint8_t threadId = fetchByte(buffer, pc);
+	uint8_t i = fetchByte(buffer, pc);
+
+	fprintf(f, "  resetThread 0x%02X, 0x%02X //TODO: verify mnemonic syntax\n", threadId, i);
+}
+
+static void dump_selectVideoPage (FILE* f, uint8_t* buffer, int& pc) {
+	uint8_t frameBufferId = fetchByte(buffer, pc);
+	fprintf(f, "  selectVideoPage pageid:0x%02X\n", frameBufferId);
+}
+
+static void dump_fillVideoPage (FILE* f, uint8_t* buffer, int& pc) {
+	uint8_t pageId = fetchByte(buffer, pc);
+	uint8_t color = fetchByte(buffer, pc);
+	fprintf(f, "  fillVideoPage pageid:0x%02X, color:0x%02X\n", pageId, color);
+}
+
+static void dump_copyVideoPage (FILE* f, uint8_t* buffer, int& pc) {
+	uint8_t srcPageId = fetchByte(buffer, pc);
+	uint8_t dstPageId = fetchByte(buffer, pc);
+	fprintf(f, "  copyVideoPage src:0x%02X, dst:0x%02X\n", srcPageId, dstPageId);
+}
+
+static void dump_blitFramebuffer (FILE* f, uint8_t* buffer, int& pc) {
+	uint8_t pageId = fetchByte(buffer, pc);
+	fprintf(f, "  blitFramebuffer pageid:0x%02X\n", pageId);
+}
+
+static void dump_killThread (FILE* f, uint8_t* buffer, int& pc) {
+	fprintf(f, "  killThread\n");
+}
+
+static void dump_drawString (FILE* f, uint8_t* buffer, int& pc) {
+	uint16_t stringId = fetchWord(buffer, pc);
+	uint16_t x = fetchByte(buffer, pc);
+	uint16_t y = fetchByte(buffer, pc);
+	uint16_t color = fetchByte(buffer, pc);
+
+	fprintf(f, "  drawString id:0x%04X, x:0x%02X, y:0x%02X, color:0x%02X\n", stringId, x, y, color);
+}
+
+static void dump_sub (FILE* f, uint8_t* buffer, int& pc) {
+	uint8_t i = fetchByte(buffer, pc);
+	uint8_t j = fetchByte(buffer, pc);
+	fprintf(f, "  sub [0x%02X], [0x%02X]\n", i, j);
+}
+
+static void dump_and (FILE* f, uint8_t* buffer, int& pc) {
+	uint8_t variableId = fetchByte(buffer, pc);
+	uint16_t n = fetchWord(buffer, pc);
+	fprintf(f, "  and [0x%02X], 0x%04X\n", variableId, n);
+}
+
+static void dump_or (FILE* f, uint8_t* buffer, int& pc) {
+	uint8_t variableId = fetchByte(buffer, pc);
+	uint16_t value = fetchWord(buffer, pc);
+	fprintf(f, "  or [0x%02X], 0x%04X\n", variableId, value);
+}
+
+static void dump_shl (FILE* f, uint8_t* buffer, int& pc) {
+	uint8_t variableId = fetchByte(buffer, pc);
+	uint16_t leftShiftValue = fetchWord(buffer, pc);
+	fprintf(f, "  shl [0x%02X], 0x%04X\n", variableId, leftShiftValue);
+}
+
+static void dump_shr (FILE* f, uint8_t* buffer, int& pc) {
+	uint8_t variableId = fetchByte(buffer, pc);
+	uint16_t rightShiftValue = fetchWord(buffer, pc);
+	fprintf(f, "  shr [0x%02X], 0x%04X\n", variableId, rightShiftValue);
+}
+
+static void dump_playSound (FILE* f, uint8_t* buffer, int& pc) {
+	uint16_t resourceId = fetchWord(buffer, pc);
+	uint8_t freq = fetchByte(buffer, pc);
+	uint8_t vol = fetchByte(buffer, pc);
+	uint8_t channel = fetchByte(buffer, pc);
+	fprintf(f, "  playSound id:0x%04X, freq:0x%02X, vol:0x%02X, channel:0x%02X\n", resourceId, freq, vol, channel);
+}
+
+static void dump_updateMemList (FILE* f, uint8_t* buffer, int& pc) {
+	uint16_t resourceId = fetchWord(buffer, pc);
+	fprintf(f, "  updateMemList id:0x%04X\n", resourceId);
+}
+
+static void dump_playMusic (FILE* f, uint8_t* buffer, int& pc) {
+	uint16_t resNum = fetchWord(buffer, pc);
+	uint16_t delay = fetchWord(buffer, pc);
+	uint8_t pos = fetchByte(buffer, pc);
+	fprintf(f, "  playMusic id:0x%04X, delay:0x%04X, pos:0x%02X\n", resNum, delay, pos);
+}
+
+void Resource::dumpSource(MemEntry* me, uint8_t* buffer, char* filename) {
+  FILE* f = fopen(filename, "wb");
+
+  int pc=0;
+  while (pc < me->size){
+    fprintf(f, "%05X:\t", pc);
+    uint8_t opcode = buffer[pc++];
+    switch(opcode){
+      case 0x00: dump_movConst(f, buffer, pc); break;
+      case 0x01: dump_mov(f, buffer, pc); break;
+      case 0x02: dump_add(f, buffer, pc); break;
+      case 0x03: dump_addConst(f, buffer, pc); break;
+      case 0x04: dump_call(f, buffer, pc); break;
+      case 0x05: dump_ret(f, buffer, pc); break;
+      case 0x06: dump_pauseThread(f, buffer, pc); break;
+      case 0x07: dump_jmp(f, buffer, pc); break;
+      case 0x08: dump_setSetVect(f, buffer, pc); break;
+      case 0x09: dump_djnz(f, buffer, pc); break;
+      case 0x0A: dump_condJmp(f, buffer, pc); break;
+      case 0x0B: dump_setPalette(f, buffer, pc); break;
+      case 0x0C: dump_resetThread(f, buffer, pc); break;
+      case 0x0D: dump_selectVideoPage(f, buffer, pc); break;
+      case 0x0E: dump_fillVideoPage(f, buffer, pc); break;
+      case 0x0F: dump_copyVideoPage(f, buffer, pc); break;
+      case 0x10: dump_blitFramebuffer(f, buffer, pc); break;
+      case 0x11: dump_killThread(f, buffer, pc); break;
+      case 0x12: dump_drawString(f, buffer, pc); break;
+      case 0x13: dump_sub(f, buffer, pc); break;
+      case 0x14: dump_and(f, buffer, pc); break;
+      case 0x15: dump_or(f, buffer, pc); break;
+      case 0x16: dump_shl(f, buffer, pc); break;
+      case 0x17: dump_shr(f, buffer, pc); break;
+      case 0x18: dump_playSound(f, buffer, pc); break;
+      case 0x19: dump_updateMemList(f, buffer, pc); break;
+      case 0x1A: dump_playMusic(f, buffer, pc); break;
+      default:
+        fprintf(f, "<unknown opcode: %02X>\n", opcode); break;
+    }
+  }
+  fclose(f);  
+}
+
+void Resource::dumpBytecode() {
+  int i;
+	for (i=0; i < _numMemList; i++) {
+		MemEntry *me = &_memList[i];
+
+		if (me->type == RT_BYTECODE) {
+      uint8_t* buffer = (uint8_t*) malloc(me->size * sizeof(uint8_t));
+      char filename[15];
+      sprintf(filename, "bytecode%02x.txt", i);
+		  FILE* f = fopen(filename, "wb");
+
+      //dump it!
+      readBank(me, buffer);
+      fprintf(f, "bytecode chunk #%d:\n\n", i);
+      for (int p=0; p < me->size; p++){
+        fprintf(f, "%02x ", buffer[p]);
+        if (p%8==3) fprintf(f, " ");
+        if (p%8==7) fprintf(f, "\n");
+      }
+      fprintf(f, "\n\n");
+      fclose(f);
+
+      sprintf(filename, "bytecode%02x.bin", i);
+      dumpBinary(me, buffer, filename);
+
+      sprintf(filename, "bytecode%02x.asm", i);
+      dumpSource(me, buffer, filename);
+
+      free(buffer);
+		}
+  }  	
+}
+
+void Resource::dumpUnknown() {
+  int i;
+	for (i=0; i < _numMemList; i++) {
+		MemEntry *me = &_memList[i];
+    uint8_t* buffer = (uint8_t*) malloc(me->size * sizeof(uint8_t));
+		
+		if (me->type > RT_POLY_CINEMATIC) {
+
+      printf("unknown type: %d\n\n", me->type);
+
+      char filename[14];
+      FILE* f;
+      sprintf(filename, "unknown%02X.dat", i);
+
+      f = fopen(filename, "wb");
+
+      //dump it!
+      readBank(me, buffer);
+      printf("unknown chunk #%d:\n", i);
+      for (int p=0; p < me->size; p++){
+        fprintf(f, "%c", buffer[p]);
+      }
+      fclose(f);
+//      printf("\n\n");
+		}
+
+    free(buffer);
+  }  	
 }
 
 /*

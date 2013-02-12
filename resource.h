@@ -98,6 +98,10 @@ struct Resource {
 	
 	void readBank(const MemEntry *me, uint8_t *dstBuf);
 	void readEntries();
+  void dumpBinary(MemEntry* me, uint8_t* buffer, char* filename);
+  void dumpSource(MemEntry* me, uint8_t* buffer, char* filename);
+	void dumpBytecode();
+  void dumpUnknown();
 	void loadMarkedAsNeeded();
 	void invalidateAll();
 	void invalidateRes();	
