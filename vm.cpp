@@ -118,7 +118,7 @@ void VirtualMachine::op_setSetVect() {
 	uint8_t threadId = _scriptPtr.fetchByte();
 	uint16_t pcOffsetRequested = _scriptPtr.fetchWord();
 	debug(DBG_VM, "VirtualMachine::op_setSetVect(0x%X, 0x%X)", threadId,pcOffsetRequested);
-	threadsData[1][threadId] = pcOffsetRequested;
+	threadsData[REQUESTED_PC_OFFSET][threadId] = pcOffsetRequested;
 }
 
 void VirtualMachine::op_jnz() {
@@ -234,12 +234,12 @@ void VirtualMachine::op_resetThread() {
 	debug(DBG_VM, "VirtualMachine::op_resetThread(%d, %d, %d)", threadId, i, a);
 
 	if (a == 2) {
-		uint16_t *p = &threadsData[1][threadId];
+		uint16_t *p = &threadsData[REQUESTED_PC_OFFSET][threadId];
 		while (n--) {
 			*p++ = 0xFFFE;
 		}
 	} else if (a < 2) {
-		uint8_t *p = &vmIsChannelActive[1][threadId];
+		uint8_t *p = &vmIsChannelActive[REQUESTED_STATE][threadId];
 		while (n--) {
 			*p++ = a;
 		}
@@ -455,7 +455,7 @@ void VirtualMachine::hostFrame() {
 		if (vmIsChannelActive[CURR_STATE][threadId])
 			continue;
 		
-		uint16_t n = threadsData[0][threadId];
+		uint16_t n = threadsData[PC_OFFSET][threadId];
 
 		if (n != VM_INACTIVE_THREAD) {
 
@@ -473,7 +473,7 @@ void VirtualMachine::hostFrame() {
 			threadsData[PC_OFFSET][threadId] = _scriptPtr.pc - res->segBytecode;
 
 
-			debug(DBG_VM, "VirtualMachine::hostFrame() i=0x%02X pos=0x%X", threadId, threadsData[0][threadId]);
+			debug(DBG_VM, "VirtualMachine::hostFrame() i=0x%02X pos=0x%X", threadId, threadsData[PC_OFFSET][threadId]);
 			if (sys->input.quit) {
 				break;
 			}
