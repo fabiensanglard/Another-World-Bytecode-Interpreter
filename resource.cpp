@@ -541,31 +541,31 @@ void Resource::dumpBytecode() {
 	for (i=0; i < _numMemList; i++) {
 		MemEntry *me = &_memList[i];
 
+    uint8_t* buffer = (uint8_t*) malloc(me->size * sizeof(uint8_t));
+    char filename[18];
+    sprintf(filename, "resource-0x%02x.txt", i);
+	  FILE* f = fopen(filename, "wb");
+
+    //dump it!
+    readBank(me, buffer);
+    fprintf(f, "bytecode chunk #%d:\n\n", i);
+    for (int p=0; p < me->size; p++){
+      fprintf(f, "%02x ", buffer[p]);
+      if (p%8==3) fprintf(f, " ");
+      if (p%8==7) fprintf(f, "\n");
+    }
+    fprintf(f, "\n\n");
+    fclose(f);
+
+    sprintf(filename, "resource-0x%02x.bin", i);
+    dumpBinary(me, buffer, filename);
+
 		if (me->type == RT_BYTECODE) {
-      uint8_t* buffer = (uint8_t*) malloc(me->size * sizeof(uint8_t));
-      char filename[15];
-      sprintf(filename, "bytecode%02x.txt", i);
-		  FILE* f = fopen(filename, "wb");
-
-      //dump it!
-      readBank(me, buffer);
-      fprintf(f, "bytecode chunk #%d:\n\n", i);
-      for (int p=0; p < me->size; p++){
-        fprintf(f, "%02x ", buffer[p]);
-        if (p%8==3) fprintf(f, " ");
-        if (p%8==7) fprintf(f, "\n");
-      }
-      fprintf(f, "\n\n");
-      fclose(f);
-
-      sprintf(filename, "bytecode%02x.bin", i);
-      dumpBinary(me, buffer, filename);
-
-      sprintf(filename, "bytecode%02x.asm", i);
+      sprintf(filename, "resource-0x%02x.asm", i);
       dumpSource(me, buffer, filename);
+    }
 
-      free(buffer);
-		}
+    free(buffer);
   }  	
 }
 
