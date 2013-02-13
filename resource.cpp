@@ -196,7 +196,7 @@ void Resource::loadMarkedAsNeeded() {
 			loadDestination = _scriptCurPtr;
 			if (me->size > _vidBakPtr - _scriptCurPtr) {
 				warning("Resource::load() not enough memory");
-				me->state = 0;
+				me->state = MEMENTRY_STATE_NOT_NEEDED;
 				continue;
 			}
 		}
@@ -210,7 +210,7 @@ void Resource::loadMarkedAsNeeded() {
 			readBank(me, loadDestination);
 			if(me->type == RT_POLY_ANIM) {
 				video->copyPagePtr(_vidCurPtr);
-				me->state = 0;
+				me->state = MEMENTRY_STATE_NOT_NEEDED;
 			} else {
 				me->bufPtr = loadDestination;
 				me->state = MEMENTRY_STATE_LOADED;
@@ -239,7 +239,7 @@ void Resource::invalidateAll() {
 	MemEntry *me = _memList;
 	uint16_t i = _numMemList;
 	while (i--) {
-		me->state = 0;
+		me->state = MEMENTRY_STATE_NOT_NEEDED;
 		++me;
 	}
 	_scriptCurPtr = _memPtrStart;
@@ -294,14 +294,14 @@ void Resource::setupPart(uint16_t partId) {
 	// Mark all resources as located on harddrive.
 	invalidateAll();
 
-	_memList[paletteIndex].state = 2;
-	_memList[codeIndex].state = 2;
-	_memList[videoCinematicIndex].state = 2;
+	_memList[paletteIndex].state = MEMENTRY_STATE_LOAD_ME;
+	_memList[codeIndex].state = MEMENTRY_STATE_LOAD_ME;
+	_memList[videoCinematicIndex].state = MEMENTRY_STATE_LOAD_ME;
 
 	// This is probably a cinematic or a non interactive part of the game.
 	// Player and enemy polygons are not needed.
 	if (video2Index != MEMLIST_PART_NONE) 
-		_memList[video2Index].state = 2;
+		_memList[video2Index].state = MEMENTRY_STATE_LOAD_ME;
 	
 
 	loadMarkedAsNeeded();
@@ -357,7 +357,7 @@ void Resource::saveOrLoad(Serializer &ser) {
 			MemEntry *me = 0;
 			uint16_t num = _numMemList;
 			while (num--) {
-				if (it->state == 1 && it->bufPtr == q) {
+				if (it->state == MEMENTRY_STATE_LOADED && it->bufPtr == q) {
 					me = it;
 				}
 				++it;
@@ -395,7 +395,7 @@ void Resource::saveOrLoad(Serializer &ser) {
 			MemEntry *me = &_memList[*p++];
 			readBank(me, q);
 			me->bufPtr = q;
-			me->state = 1;
+			me->state = MEMENTRY_STATE_LOADED;
 			q += me->size;
 		}
 	}	

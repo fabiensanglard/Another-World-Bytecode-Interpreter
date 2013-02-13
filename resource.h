@@ -47,8 +47,13 @@ struct MemEntry {
 	uint16_t size; // 0x12
 };
 /*
-     Note: state is not a boolean, it can have value 0, 1 or 2. WTF ?!
+     Note: state is not a boolean, it can have value 0, 1, 2 or 255, respectively meaning:
+      0:NOT_NEEDED
+      1:LOADED
+      2:LOAD_ME
+      255:END_OF_MEMLIST
 
+    See MEMENTRY_STATE_* #defines above.
 */
 
 struct Serializer;
