@@ -213,8 +213,8 @@ static void printVariableName(FILE* f, uint8_t id){
 
 static void dump_movConst(FILE* f, uint8_t* buffer, int& pc) {
 	uint8_t variableId = fetchByte(buffer, pc);
-	int16_t value = fetchWord(buffer, pc);
-	fprintf(f, "  movConst [");
+	uint16_t value = fetchWord(buffer, pc);
+	fprintf(f, "  mov [");
   printVariableName(f, variableId);
 	fprintf(f, "], 0x%04X\n", value);
 }
@@ -241,8 +241,8 @@ static void dump_add(FILE* f, uint8_t* buffer, int& pc) {
 
 static void dump_addConst(FILE* f, uint8_t* buffer, int& pc) {
 	uint8_t variableId = fetchByte(buffer, pc);
-	int16_t value = fetchWord(buffer, pc);
-	fprintf(f, "  addConst [");
+	uint16_t value = fetchWord(buffer, pc);
+	fprintf(f, "  add [");
   printVariableName(f, variableId);
 	fprintf(f, "], 0x%04X\n", value);
 }
@@ -257,7 +257,12 @@ static void dump_ret(FILE* f, uint8_t* buffer, int& pc) {
 }
 
 static void dump_pauseThread(FILE* f, uint8_t* buffer, int& pc) {
-	fprintf(f, "  pauseThread\n");
+  // From Eric Chahi notes found
+  // at (at http://www.anotherworld.fr/anotherworld_uk/page_realisation.htm):
+  //
+  //  Break
+  //  Temporarily stops the executing channel and goes to the next.
+	fprintf(f, "  break\n");
 }
 
 static void dump_jmp (FILE* f, uint8_t* buffer, int& pc) {
@@ -266,12 +271,19 @@ static void dump_jmp (FILE* f, uint8_t* buffer, int& pc) {
 }
 
 static void dump_setSetVect (FILE* f, uint8_t* buffer, int& pc) {
+  // From Eric Chahi notes found
+  // at (at http://www.anotherworld.fr/anotherworld_uk/page_realisation.htm):
+  //
+  //  Setvec "numéro de canal", adresse
+  //  Initialises a channel with a code address to execute
+
 	uint8_t threadId = fetchByte(buffer, pc);
 	uint16_t pcOffsetRequested = fetchWord(buffer, pc);
-	fprintf(f, "  setSetVect threadid:0x%02X, offset:0x%04X\n", threadId, pcOffsetRequested);
+	fprintf(f, "  setvec channel:0x%02X, address:0x%04X\n", threadId, pcOffsetRequested);
 }
 
 static void dump_djnz (FILE* f, uint8_t* buffer, int& pc) {
+  // djnz: 'D'ecrement variable value and 'J'ump if 'N'ot 'Z'ero
 	uint8_t i = fetchByte(buffer, pc);
 	uint16_t pcOffset = fetchWord(buffer, pc);
 	fprintf(f, "  djnz [");
@@ -334,25 +346,41 @@ static void dump_condJmp (FILE* f, uint8_t* buffer, int& pc) {
 
 static void dump_setPalette (FILE* f, uint8_t* buffer, int& pc) {
 	uint16_t paletteId = fetchWord(buffer, pc);
-	fprintf(f, "  changePalette id:0x%04X\n", paletteId);
+	fprintf(f, "  setPalette 0x%04X\n", paletteId);
 }
 
 static void dump_resetThread (FILE* f, uint8_t* buffer, int& pc) {
-	uint8_t threadId = fetchByte(buffer, pc);
-	uint8_t i = fetchByte(buffer, pc);
+  // From Eric Chahi notes found
+  // at (at http://www.anotherworld.fr/anotherworld_uk/page_realisation.htm):
+  //
+  //  Vec début, fin, type
+  //  Deletes, freezes or unfreezes a series of channels.
 
-	fprintf(f, "  resetThread 0x%02X, 0x%02X //TODO: verify mnemonic syntax\n", threadId, i);
+	uint8_t first = fetchByte(buffer, pc);
+	uint8_t last = fetchByte(buffer, pc);
+	uint8_t type = fetchByte(buffer, pc);
+
+  switch (type){
+    case 0: fprintf (f, "  freezeChannels"); break;
+    case 1: fprintf (f, "  unfreezeChannels"); break;
+    case 2: fprintf (f, "  deleteChannels"); break;
+    default:
+      fprintf (f, " <error: invalid type for resetThread opcode>\n");
+      return;
+      break;
+  }
+	fprintf(f, " first:0x%02X, last:0x%02X\n", first, last);
 }
 
 static void dump_selectVideoPage (FILE* f, uint8_t* buffer, int& pc) {
 	uint8_t frameBufferId = fetchByte(buffer, pc);
-	fprintf(f, "  selectVideoPage pageid:0x%02X\n", frameBufferId);
+	fprintf(f, "  selectVideoPage 0x%02X\n", frameBufferId);
 }
 
 static void dump_fillVideoPage (FILE* f, uint8_t* buffer, int& pc) {
 	uint8_t pageId = fetchByte(buffer, pc);
 	uint8_t color = fetchByte(buffer, pc);
-	fprintf(f, "  fillVideoPage pageid:0x%02X, color:0x%02X\n", pageId, color);
+	fprintf(f, "  fillVideoPage 0x%02X, color:0x%02X\n", pageId, color);
 }
 
 static void dump_copyVideoPage (FILE* f, uint8_t* buffer, int& pc) {
@@ -363,20 +391,26 @@ static void dump_copyVideoPage (FILE* f, uint8_t* buffer, int& pc) {
 
 static void dump_blitFramebuffer (FILE* f, uint8_t* buffer, int& pc) {
 	uint8_t pageId = fetchByte(buffer, pc);
-	fprintf(f, "  blitFramebuffer pageid:0x%02X\n", pageId);
+	fprintf(f, "  blitFramebuffer 0x%02X\n", pageId);
 }
 
 static void dump_killThread (FILE* f, uint8_t* buffer, int& pc) {
-	fprintf(f, "  killThread\n");
+	fprintf(f, "  killChannel\n");
 }
 
 static void dump_drawString (FILE* f, uint8_t* buffer, int& pc) {
+  // From Eric Chahi notes found
+  // at (at http://www.anotherworld.fr/anotherworld_uk/page_realisation.htm):
+  //
+  //  Text "text number", x, y, color
+  //  Displays in the work screen the specified text for the coordinates x,y.
+
 	uint16_t stringId = fetchWord(buffer, pc);
 	uint16_t x = fetchByte(buffer, pc);
 	uint16_t y = fetchByte(buffer, pc);
 	uint16_t color = fetchByte(buffer, pc);
 
-	fprintf(f, "  drawString id:0x%04X, x:0x%02X, y:0x%02X, color:0x%02X\n", stringId, x, y, color);
+	fprintf(f, "  text id:0x%04X, x:0x%02X, y:0x%02X, color:0x%02X\n", stringId, x, y, color);
 }
 
 static void dump_sub (FILE* f, uint8_t* buffer, int& pc) {
@@ -422,23 +456,42 @@ static void dump_shr (FILE* f, uint8_t* buffer, int& pc) {
 }
 
 static void dump_playSound (FILE* f, uint8_t* buffer, int& pc) {
+  // From Eric Chahi notes found
+  // at (at http://www.anotherworld.fr/anotherworld_uk/page_realisation.htm):
+  //
+  //  Play "file number" note, volume, channel
+  //  Plays the sound file on one of the four game audio channels with
+  //  specific height and volume.
+
 	uint16_t resourceId = fetchWord(buffer, pc);
 	uint8_t freq = fetchByte(buffer, pc);
 	uint8_t vol = fetchByte(buffer, pc);
 	uint8_t channel = fetchByte(buffer, pc);
-	fprintf(f, "  playSound id:0x%04X, freq:0x%02X, vol:0x%02X, channel:0x%02X\n", resourceId, freq, vol, channel);
+	fprintf(f, "  play id:0x%04X, freq:0x%02X, vol:0x%02X, channel:0x%02X\n", resourceId, freq, vol, channel);
 }
 
 static void dump_updateMemList (FILE* f, uint8_t* buffer, int& pc) {
+  // From Eric Chahi notes found
+  // at (at http://www.anotherworld.fr/anotherworld_uk/page_realisation.htm):
+  //
+  //  Load "file number"
+  //  Loads a file in memory, such as sound, level or image.
+
 	uint16_t resourceId = fetchWord(buffer, pc);
-	fprintf(f, "  updateMemList id:0x%04X\n", resourceId);
+	fprintf(f, "  load id:0x%04X\n", resourceId);
 }
 
 static void dump_playMusic (FILE* f, uint8_t* buffer, int& pc) {
+  // From Eric Chahi notes found
+  // at (at http://www.anotherworld.fr/anotherworld_uk/page_realisation.htm):
+  //
+  //  Song "file number" Tempo, Position
+  //  Initialises a song.
+
 	uint16_t resNum = fetchWord(buffer, pc);
 	uint16_t delay = fetchWord(buffer, pc);
 	uint8_t pos = fetchByte(buffer, pc);
-	fprintf(f, "  playMusic id:0x%04X, delay:0x%04X, pos:0x%02X\n", resNum, delay, pos);
+	fprintf(f, "  song id:0x%04X, delay:0x%04X, pos:0x%02X\n", resNum, delay, pos);
 }
 
 void Resource::dumpSource(MemEntry* me, uint8_t* buffer, char* filename) {
