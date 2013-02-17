@@ -99,16 +99,19 @@ bool Bank::unpack() {
 	do {
 		if (!nextBit()) {
 			if (!nextBit()) {
-				decodeByteSequence(1, 3); // 1 + 2^(3bits) == decode at least 1 byte / up to 8 bytes
+				decodeByteSequence(1, 3); // 1 + [3bits] == decode at least 1 byte / up to 8 bytes
 
-        //Encoding efficiency: 1,60 up to 12,80
-        //It takes 2+3 = 5 bits of encoded data to represent
+        //Packing efficiency: between 1,04 and 1,60
+        //Efficiency Formula: (8 + 8N)/(5 + 8N) for N=[0 to 7]
+        //Data size: 1+N bytes
+
+        //It takes 2 + 3 + 8*[0 to 2^3-1] = 5 to 61 bits of encoded data to represent
         // at least 8 bits / up to 64 bits of raw data.
 			} else {
         //copy 2 bytes previously occurring in the decoded data
 				CopyPattern(2, 8); //up to 2^8-1 = 255 bytes far away
 
-        //Encoding efficiency: 1,60
+        //Packing efficiency: 1,60
         //It takes 10 bits of encoded data to represent 16 bits of raw data.
 			}
 		} else {
@@ -118,14 +121,14 @@ bool Bank::unpack() {
           //copy 3 bytes from a pattern previously occurring in the decoded data
 					CopyPattern(3, 9); //up to 2^9 = 512 bytes far away
 
-          //Encoding efficiency: 2,00
+          //Packing efficiency: 2,00
           //It takes 12 bits to encode 24bits
           break;
         case 1:
           //copy 4 bytes from a pattern previously occurring in the decoded data
 					CopyPattern(4, 10); //up to 2^10 = 1kbytes far away
 
-          //Encoding efficiency: 2,46
+          //Packing efficiency: 2,46
           //It takes 13 bits to encode 32bits
           break;
         case 2:
@@ -133,15 +136,23 @@ bool Bank::unpack() {
           // from a pattern previously occurring in the decoded data
 					CopyPattern(getCode(8)+1, 12); //up to 2^12 = 4kbytes far away
 
-          //Encoding efficiency: 1,21 up to 62,06
+          //Packing efficiency: 1,21 up to 62,06
+          //Efficiency Fórmula: 8N / 33 for N=[1 to 256]
+          //Data size: N bytes
+
           //It takes 3+8+12 = 33 bits to encode 8 bits up to 8*256 bits
           //This is only useful for encoding a sequence of at least 5 bytes, otherwise, the resulting encoded data would take up more space than the raw data.
           break;
         case 3:
-  				decodeByteSequence(9, 8); // 9 + 2^(8bits) == decode at least 9 bytes / up to 255+9=264 bytes
+  				decodeByteSequence(9, 8); // 9 + [8bits] == decode at least 9 bytes / 
+                                    //  up to 9+255 = 264 bytes
 
-          //Encoding efficiency: 6,54 up to 192
-          //It takes 3+8 = 11 bits of encoded data to represent
+          //Packing efficiency: between 1,02 and 6,54
+          //Efficiency Fórmula: (72 + 8N) / (11 + 8N) for N=[0 to 255]
+          //Data size: 9+N bytes
+
+          //It takes 3 + 8 + 8*[0 to 2^8-1] = 11 + 8*[0 to 255] bits
+          // of encoded data to represent
           // at least 9*8=72 bits / up to 264*8 bits of raw data.
           break;
       }
