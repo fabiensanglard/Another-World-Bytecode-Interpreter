@@ -53,9 +53,9 @@ bool Bank::read(const MemEntry *me, uint8_t *buf) {
 	return ret;
 }
 
-void Bank::decUnk1(uint8_t numChunks, uint8_t addCount) {
-	uint16_t count = getCode(numChunks) + addCount + 1;
-	debug(DBG_BANK, "Bank::decUnk1(%d, %d) count=%d", numChunks, addCount, count);
+void Bank::decodeByteSequence(uint8_t minSize, uint8_t sizeBits) {
+	uint16_t count = getCode(sizeBits) + minSize;
+	debug(DBG_BANK, "Bank::decodeByteSequence(minSize=%d, sizeBits=%d) count=%d", minSize, sizeBits, count);
 	_unpCtx.datasize -= count;
 	while (count--) {
 		assert(_oBuf >= _iBuf && _oBuf >= _startBuf);
@@ -65,16 +65,24 @@ void Bank::decUnk1(uint8_t numChunks, uint8_t addCount) {
 }
 
 /*
-   Note from fab: This look like run-length encoding.
+  Note from fab:
+    This look like run-length encoding.
+
+  Note from Felipe Sanches:
+    This function decodes a portion of the data by making a copy of a chunk of data that is already present in a region of the previously decoded data.
+
+    The size of the data chunk is given by the first parameter: <size>.
+    The position from where data is copied is defined by an offset that is 
+      read from the encoded data stream by reading its next <offsetBits> bits.
+
 */
-void Bank::decUnk2(uint8_t numChunks) {
-	uint16_t i = getCode(numChunks);
-	uint16_t count = _unpCtx.size + 1;
-	debug(DBG_BANK, "Bank::decUnk2(%d) i=%d count=%d", numChunks, i, count);
+void Bank::CopyPattern(uint16_t count, uint8_t offsetBits) {
+	uint16_t offset = getCode(offsetBits);
+	debug(DBG_BANK, "Bank::CopyPattern(count=%d, offsetBits=%d) offset=%d", count, offsetBits, offset);
 	_unpCtx.datasize -= count;
 	while (count--) {
 		assert(_oBuf >= _iBuf && _oBuf >= _startBuf);
-		*_oBuf = *(_oBuf + i);
+		*_oBuf = *(_oBuf + offset);
 		--_oBuf;
 	}
 }
@@ -83,50 +91,77 @@ void Bank::decUnk2(uint8_t numChunks) {
 	Most resource in the banks are compacted.
 */
 bool Bank::unpack() {
-	_unpCtx.size = 0;
 	_unpCtx.datasize = READ_BE_UINT32(_iBuf); _iBuf -= 4;
 	_oBuf = _startBuf + _unpCtx.datasize - 1;
 	_unpCtx.crc = READ_BE_UINT32(_iBuf); _iBuf -= 4;
 	_unpCtx.chk = READ_BE_UINT32(_iBuf); _iBuf -= 4;
 	_unpCtx.crc ^= _unpCtx.chk;
 	do {
-		if (!nextChunk()) {
-			_unpCtx.size = 1;
-			if (!nextChunk()) {
-				decUnk1(3, 0);
+		if (!nextBit()) {
+			if (!nextBit()) {
+				decodeByteSequence(1, 3); // 1 + 2^(3bits) == decode at least 1 byte / up to 8 bytes
+
+        //Encoding efficiency: 1,60 up to 12,80
+        //It takes 2+3 = 5 bits of encoded data to represent
+        // at least 8 bits / up to 64 bits of raw data.
 			} else {
-				decUnk2(8);
+        //copy 2 bytes previously occurring in the decoded data
+				CopyPattern(2, 8); //up to 2^8-1 = 255 bytes far away
+
+        //Encoding efficiency: 1,60
+        //It takes 10 bits of encoded data to represent 16 bits of raw data.
 			}
 		} else {
 			uint16_t c = getCode(2);
-			if (c == 3) {
-				decUnk1(8, 8);
-			} else {
-				if (c < 2) {
-					_unpCtx.size = c + 2;
-					decUnk2(c + 9);
-				} else {
-					_unpCtx.size = getCode(8);
-					decUnk2(12);
-				}
-			}
+      switch(c){
+        case 0:
+          //copy 3 bytes from a pattern previously occurring in the decoded data
+					CopyPattern(3, 9); //up to 2^9 = 512 bytes far away
+
+          //Encoding efficiency: 2,00
+          //It takes 12 bits to encode 24bits
+          break;
+        case 1:
+          //copy 4 bytes from a pattern previously occurring in the decoded data
+					CopyPattern(4, 10); //up to 2^10 = 1kbytes far away
+
+          //Encoding efficiency: 2,46
+          //It takes 13 bits to encode 32bits
+          break;
+        case 2:
+          //copy up to 256 bytes (ammount defined by 8bit code)
+          // from a pattern previously occurring in the decoded data
+					CopyPattern(getCode(8)+1, 12); //up to 2^12 = 4kbytes far away
+
+          //Encoding efficiency: 1,21 up to 62,06
+          //It takes 3+8+12 = 33 bits to encode 8 bits up to 8*256 bits
+          //This is only useful for encoding a sequence of at least 5 bytes, otherwise, the resulting encoded data would take up more space than the raw data.
+          break;
+        case 3:
+  				decodeByteSequence(9, 8); // 9 + 2^(8bits) == decode at least 9 bytes / up to 255+9=264 bytes
+
+          //Encoding efficiency: 6,54 up to 192
+          //It takes 3+8 = 11 bits of encoded data to represent
+          // at least 9*8=72 bits / up to 264*8 bits of raw data.
+          break;
+      }
 		}
 	} while (_unpCtx.datasize > 0);
 	return (_unpCtx.crc == 0);
 }
 
-uint16_t Bank::getCode(uint8_t numChunks) {
+uint16_t Bank::getCode(uint8_t numBits) {
 	uint16_t c = 0;
-	while (numChunks--) {
+	while (numBits--) {
 		c <<= 1;
-		if (nextChunk()) {
+		if (nextBit()) {
 			c |= 1;
 		}			
 	}
 	return c;
 }
 
-bool Bank::nextChunk() {
+bool Bank::nextBit() {
 	bool CF = rcr(false);
 	if (_unpCtx.chk == 0) {
 		assert(_iBuf >= _startBuf);

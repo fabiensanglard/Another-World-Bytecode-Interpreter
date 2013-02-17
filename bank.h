@@ -24,7 +24,6 @@
 struct MemEntry;
 
 struct UnpackContext {
-	uint16_t size;
 	uint32_t crc;
 	uint32_t chk;
 	int32_t datasize;
@@ -38,11 +37,11 @@ struct Bank {
 	Bank(const char *dataDir);
 
 	bool read(const MemEntry *me, uint8_t *buf);
-	void decUnk1(uint8_t numChunks, uint8_t addCount);
-	void decUnk2(uint8_t numChunks);
+	void decodeByteSequence(uint8_t minSize, uint8_t sizeBits);
+	void CopyPattern(uint16_t size, uint8_t offsetBits);
 	bool unpack();
-	uint16_t getCode(uint8_t numChunks);
-	bool nextChunk();
+	uint16_t getCode(uint8_t numBits);
+	bool nextBit();
 	bool rcr(bool CF);
 };
 
