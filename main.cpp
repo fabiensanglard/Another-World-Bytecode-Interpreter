@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
 			opt |= parseOption(argv[i], "savepath=", &savePath);
 		}
 		if (!opt) {
-			//printf(USAGE);
+			printf("%s",USAGE);
 			return 0;
 		}
 	}
