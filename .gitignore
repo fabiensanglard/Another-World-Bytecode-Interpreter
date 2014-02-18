@@ -9,3 +9,6 @@ TODO
 **/*.user
 **.[ado]
 /game
+
+.DS_Store
+DerivedData
