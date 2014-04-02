@@ -198,7 +198,7 @@ int main(int argc, char *argv[]) {
       until no more ressources are marked as "Need to be loaded".
    A: ???
 
-   Orignial DOS version :
+   Original DOS version :
    ======================
 
    Banks: 1,236,519 B
