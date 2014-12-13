@@ -410,7 +410,13 @@ static void dump_drawString (FILE* f, uint8_t* buffer, int& pc) {
 	uint16_t y = fetchByte(buffer, pc);
 	uint16_t color = fetchByte(buffer, pc);
 
-	fprintf(f, "  text id:0x%04X, x:0x%02X, y:0x%02X, color:0x%02X\n", stringId, x, y, color);
+	const StrEntry *se = Video::_stringsTableEng;
+
+	//Search for the location where the string is located.
+	while (se->id != END_OF_STRING_DICTIONARY && se->id != stringId)
+		++se;
+
+	fprintf(f, "  text id:0x%04X, x:%d, y:%d, color:0x%02X\t;\"%s\"\n", stringId, x, y, color, se->str);
 }
 
 static void dump_sub (FILE* f, uint8_t* buffer, int& pc) {
