@@ -503,6 +503,8 @@ static void dump_playMusic (FILE* f, uint8_t* buffer, int& pc) {
 static void dump_video_opcodes (FILE* f, uint8_t* buffer, int& pc) {
 	uint8_t opcode = buffer[pc-1];
 
+	fprintf(f, "DEBUG  video: [0x%X 0x%X 0x%X 0x%X 0x%X]\n", buffer[pc-1], buffer[pc], buffer[pc+1], buffer[pc+2], buffer[pc+3]);
+
 	if (opcode & 0x80)
 	{
 		uint16_t off = ((opcode << 8) | fetchByte(buffer, pc)) * 2;
@@ -519,19 +521,19 @@ static void dump_video_opcodes (FILE* f, uint8_t* buffer, int& pc) {
 
 	if (opcode & 0x40)
 	{
-		int16_t x, y;
+		uint16_t x, y;
 		uint16_t off = fetchWord(buffer, pc) * 2;
-		x = fetchByte(buffer, pc);
+		char x_str[20];
+		char y_str[20];
+		char zoom_str[20];
 
-		char* x_str = (char*) malloc(17*sizeof(char));
-		char* y_str = (char*) malloc(17*sizeof(char));
-		char* zoom_str = (char*) malloc(17*sizeof(char));
+		x = fetchByte(buffer, pc);
 		if (!(opcode & 0x20))
 		{
 			if (!(opcode & 0x10))
 			{
 				x = (x << 8) | fetchByte(buffer, pc);
-				sprintf(x_str, "0x%04x", x);
+				sprintf(x_str, "%d", x);
 			} else {
 				sprintf(x_str, "[0x%02x]", x);
 			}
@@ -540,7 +542,7 @@ static void dump_video_opcodes (FILE* f, uint8_t* buffer, int& pc) {
 		{
 			if (opcode & 0x10) {
 				x += 0x100;
-				sprintf(x_str, "0x%04x", x);
+				sprintf(x_str, "%d", x);
 			}
 		}
 
@@ -549,7 +551,7 @@ static void dump_video_opcodes (FILE* f, uint8_t* buffer, int& pc) {
 			if (!(opcode & 4)) {
 				y = fetchByte(buffer, pc);
 				y = (y << 8) | fetchByte(buffer, pc);
-				sprintf(y_str, "0x%04x", y);
+				sprintf(y_str, "%d", (int) y);
 			} else {
 				y = fetchByte(buffer, pc);
 				sprintf(y_str, "[0x%02x]", y);
@@ -580,10 +582,6 @@ static void dump_video_opcodes (FILE* f, uint8_t* buffer, int& pc) {
 			}
 		}
 		fprintf(f, "  video: off=0x%X x=%s y=%s zoom:%s\n", off, x_str, y_str, zoom_str);
-
-		free(x_str);
-		free(y_str);
-		free(zoom_str);
 	}
 }
 
