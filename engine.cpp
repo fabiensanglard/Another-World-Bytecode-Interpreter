@@ -61,6 +61,8 @@ void Engine::init() {
 	res.allocMemBlock();
 
 	res.readEntries();
+	res.dumpBytecode();
+  res.dumpUnknown();
 
 	vm.init();
 
