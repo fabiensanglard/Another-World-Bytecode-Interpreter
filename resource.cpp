@@ -530,10 +530,94 @@ void Resource::dumpSource(MemEntry* me, uint8_t* buffer, char* filename) {
       case 0x19: dump_updateMemList(f, buffer, pc); break;
       case 0x1A: dump_playMusic(f, buffer, pc); break;
       default:
+		if (opcode & 0x80)
+		{
+			uint16_t off = ((opcode << 8) | fetchByte(buffer, pc)) * 2;
+			int16_t x = fetchByte(buffer, pc);
+			int16_t y = fetchByte(buffer, pc);
+			int16_t h = y - 199;
+			if (h > 0) {
+				y = 199;
+				x += h;
+			}
+			fprintf(f, "  video: off=0x%X x=%d y=%d\n", off, x, y);
+			break;
+		}
+
+		if (opcode & 0x40)
+		{
+			int16_t x, y;
+			uint16_t off = fetchWord(buffer, pc) * 2;
+			x = fetchByte(buffer, pc);
+
+			char* x_str = (char*) malloc(17*sizeof(char));
+			char* y_str = (char*) malloc(17*sizeof(char));
+			char* zoom_str = (char*) malloc(17*sizeof(char));
+			if (!(opcode & 0x20))
+			{
+				if (!(opcode & 0x10))
+				{
+					x = (x << 8) | fetchByte(buffer, pc);
+					sprintf(x_str, "0x%04x", x);
+				} else {
+					sprintf(x_str, "[0x%02x]", x);
+				}
+			}
+			else
+			{
+				if (opcode & 0x10) {
+					x += 0x100;
+					sprintf(x_str, "0x%04x", x);
+				}
+			}
+
+			if (!(opcode & 8))
+			{
+				if (!(opcode & 4)) {
+					y = fetchByte(buffer, pc);
+					y = (y << 8) | fetchByte(buffer, pc);
+					sprintf(y_str, "0x%04x", y);
+				} else {
+					y = fetchByte(buffer, pc);
+					sprintf(y_str, "[0x%02x]", y);
+				}
+			}
+
+			uint16_t zoom;
+			if (!(opcode & 2))
+			{
+				if (!(opcode & 1))
+				{
+					sprintf(zoom_str, "0x40");
+				}
+				else
+				{
+					zoom = fetchByte(buffer, pc);
+					sprintf(zoom_str, "[0x%02x]", zoom);
+				}
+			}
+			else
+			{
+				if (opcode & 1) {
+					zoom = 0x40;
+					sprintf(zoom_str, "0x40");
+				} else {
+					zoom = fetchByte(buffer, pc);
+					sprintf(zoom_str, "[0x%02x]", zoom);
+				}
+			}
+			fprintf(f, "  video: off=0x%X x=%s y=%s zoom:%s\n", off, x_str, y_str, zoom_str);
+
+			free(x_str);
+			free(y_str);
+			free(zoom_str);
+			break;
+		}
+
         fprintf(f, "<unknown opcode: %02X>\n", opcode); break;
     }
   }
-  fclose(f);  
+  fclose(f);
 }
 
 void Resource::dumpBytecode() {
