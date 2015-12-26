@@ -487,7 +487,7 @@ static void dump_playMusic (FILE* f, uint8_t* buffer, int& pc) {
 static void dump_video_opcodes (FILE* f, uint8_t* buffer, int& pc) {
     uint8_t opcode = buffer[pc-1];
 
-    fprintf(f, "DEBUG  video: [0x%X 0x%X 0x%X 0x%X 0x%X]\n", buffer[pc-1], buffer[pc], buffer[pc+1], buffer[pc+2], buffer[pc+3]);
+    //fprintf(f, "DEBUG  video: [0x%X 0x%X 0x%X 0x%X 0x%X]\n", buffer[pc-1], buffer[pc], buffer[pc+1], buffer[pc+2], buffer[pc+3]);
 
     if (opcode & 0x80)
     {
@@ -631,9 +631,10 @@ void Resource::dumpBytecode() {
         readBank(me, buffer);
         fprintf(f, "bytecode chunk #%d:\n\n", i);
         for (int p=0; p < me->size; p++){
+            if (p%16==0) fprintf(f, "%08x: ", p);
             fprintf(f, "%02x ", buffer[p]);
-            if (p%8==3) fprintf(f, " ");
-            if (p%8==7) fprintf(f, "\n");
+            if (p%16==7) fprintf(f, " ");
+            if (p%16==15) fprintf(f, "\n");
         }
         fprintf(f, "\n\n");
         fclose(f);
