@@ -27,7 +27,7 @@ struct File {
 	File_impl *_impl;
 
 	File(bool gzipped = false);
-	~File();
+	virtual ~File();
 
 	bool open(const char *filename, const char *directory, const char *mode="rb");
 	void close();
