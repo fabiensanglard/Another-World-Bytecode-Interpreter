@@ -1,6 +1,6 @@
 
-SDL_CFLAGS = `sdl-config --cflags`
-SDL_LIBS = `sdl-config --libs`
+SDL_CFLAGS = `sdl2-config --cflags`
+SDL_LIBS = `sdl2-config --libs` -lSDL2_mixer
 
 #comment this line and uncomment the one below it to force detection
 DEFINES:= -DAUTO_DETECT_PLATFORM
