@@ -1,6 +1,7 @@
-This is an Another World VM implementation.
+NEO-RAW:
+====
 
-This is based on Gregory Montoir's original work on reverse engineering the PC version.
+This is an Another World VM implementation.  Based on Gregory Montoir's original work, the codebase has been cleaned up with legibility and readability in mind.
 
 Architecture:
 =============
