@@ -44,17 +44,17 @@ To start the game, you can either :
 - use the --datapath command line option to specify the datafiles directory
 
 Here are the various in game hotkeys :
-    Arrow Keys      allow you to move Lester
-    Enter/Space     allow you run/shoot with your gun
-    C               allow to enter a code to jump at a specific level
-    P               pause the game
-    Alt X           exit the game
-    Ctrl S          save game state
-    Ctrl L          load game state
-    Ctrl + and -    change game state slot
-    Ctrl F          toggle fast mode
-    Alt Enter       toggle windowed/fullscreen mode
-    Alt + and -     change scaler factor
+-   Arrow Keys      allow you to move Lester
+-   Enter/Space     allow you run/shoot with your gun
+-   C               allow to enter a code to jump at a specific level
+-   P               pause the game
+-   Alt X           exit the game
+-   Ctrl S          save game state
+-   Ctrl L          load game state
+-   Ctrl + and -    change game state slot
+-   Ctrl F          toggle fast mode
+-   Alt Enter       toggle windowed/fullscreen mode
+-   Alt + and -     change scaler factor
 
 Credits:
 --------
