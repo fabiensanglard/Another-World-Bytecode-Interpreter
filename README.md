@@ -27,16 +27,16 @@ English PC DOS version is supported ("Out of this World").
 
 Compiling:
 ----------
+```
 cmake .
 make
-./another
-
+```
 Running:
 --------
 
 You will need the original files, here is the required list :
-    BANK*
-    MEMLIST.BIN
+- BANK*
+- MEMLIST.BIN
 	
 To start the game, you can either :
 - put the game's datafiles in the same directory as the executable
@@ -64,3 +64,4 @@ Contact:
 --------
 
 Gregory Montoir, cyx@users.sourceforge.net
+Fabien Sanglard, fabiensanglard.net@gmail.com
