@@ -1,11 +1,12 @@
-cmake_minimum_required(VERSION 3.15)
-project(AW)
+cmake_minimum_required(VERSION 3.13)
+project(raw)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 11)
 
-add_definitions(-DAUTO_DETECT_PLATFORM)
+add_definitions(-DAUTO_DETECT_PLATFORM -DBYPASS_PROTECTION)
+set(CMAKE_CXX_FLAGS " -Os -g -fno-rtti -fno-exceptions -Wall -Wno-unknown-pragmas -Wshadow -Wundef -Wwrite-strings -Wnon-virtual-dtor -Wno-multichar")
 
-add_executable(AW
+add_executable(raw
         bank.cpp
         bank.h
         endian.h
@@ -37,6 +38,6 @@ add_executable(AW
 
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
-target_link_libraries(AW ${SDL2_LIBRARIES})
-target_link_libraries(AW z)
+target_link_libraries(raw ${SDL2_LIBRARIES})
+target_link_libraries(raw z)
 
