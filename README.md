@@ -1,26 +1,16 @@
-This is "Fabother World": an Another World (Out Of This World in North America) interpreter codebase. This work is based on:
+This is an Another World VM implementation.
 
-- Piotr Padkowski's newRaw interpreter which was based on
-- Gregory Montoir's reverse engineering of
-- Eric Chahi's assembly code.
+This is based on Gregory Montoir's original work on reverse engineering the PC version.
 
-I cleaned up a lot of the code, removing cryptic hexadecimal notation
-with meaningful macros name. I also cleanup a lot of the code so it has a 
-C/C++ philosophy instead of an assembly structure.
+Architecture:
+=============
 
-I also created a Visual Studio 2010 project.
-
-TODO:
-
-Create a MacOS X project.
-Add a different rendering path OpenGL support.
+http://fabiensanglard.net/anotherWorld_code_review/index.php
+http://fabiensanglard.net/another_world_polygons/index.html
+http://fabiensanglard.net/another_world_polygons_PC_DOS/index.html
 
 Fabien Sanglard
 
-
-raw README
-Release version: 0.1.1 (May 15 2004)
--------------------------------------------------------------------------------
 
 About:
 ------
@@ -30,19 +20,16 @@ game, released under the name Out Of This World in non-European countries, was
 written by Eric Chahi at the beginning of the '90s. More information can be 
 found here : http://www.mobygames.com/game/sheet/p,2/gameId,564/.
 
-Please be aware that, currently, this implementation may contains bugs and 
-non-implemented features that make it impossible to finish the game.
-
 Supported Versions:
 -------------------
 
-Currently, only the english PC DOS version is supported ("Out of this World").
+English PC DOS version is supported ("Out of this World").
 
 Compiling:
 ----------
-
-Tweak the Makefile if needed and type make (only gcc3 has been tested so far).
-The SDL and zlib libraries are required.
+cmake .
+make
+./another
 
 Running:
 --------
