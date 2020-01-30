@@ -54,6 +54,7 @@ int main(int argc, char *argv[]) {
 		if (strlen(argv[i]) >= 2) {
 			opt |= parseOption(argv[i], "datapath=", &dataPath);
 			opt |= parseOption(argv[i], "savepath=", &savePath);
+
 		}
 		if (!opt) {
 			printf("%s",USAGE);
@@ -279,7 +280,6 @@ int main(int argc, char *argv[]) {
    TODO :
    ======
 
-       - Remove protection.
 	   - Add OpenGL support.
 	   - Add screenshot capability.
 	   - Try to run with "Another World" asset instead of "Out Of This World" assets.

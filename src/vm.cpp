@@ -37,12 +37,12 @@ void VirtualMachine::init() {
 	vmVariables[0x54] = 0x81;
 	vmVariables[VM_VARIABLE_RANDOM_SEED] = time(0);
 #ifdef BYPASS_PROTECTION
-  // these 3 variables are set by the game code
-		vmVariables[0xBC] = 0x10;
-		vmVariables[0xC6] = 0x80;
-		vmVariables[0xF2] = 4000;
-		// these 2 variables are set by the engine executable
-		vmVariables[0xDC] = 33;
+   // these 3 variables are set by the game code
+   vmVariables[0xBC] = 0x10;
+   vmVariables[0xC6] = 0x80;
+   vmVariables[0xF2] = 4000;
+   // these 2 variables are set by the engine executable
+   vmVariables[0xDC] = 33;
 #endif
 
 	_fastMode = false;
@@ -160,7 +160,6 @@ void VirtualMachine::op_condJmp() {
 	switch (opcode & 7) {
 	case 0:	// jz
 		expr = (b == a);
-
 #ifdef BYPASS_PROTECTION
       if (res->currentPartId == 16000) {
         //
@@ -181,7 +180,6 @@ void VirtualMachine::op_condJmp() {
         }
       }
 #endif
-
 		break;
 	case 1: // jnz
 		expr = (b != a);
@@ -727,21 +725,3 @@ void VirtualMachine::saveOrLoad(Serializer &ser) {
 	};
 	ser.saveOrLoadEntries(entries);
 }
-
-void VirtualMachine::bypassProtection() 
-{
-	File f(true);
-
-	if (!f.open("bank0e", res->getDataDir(), "rb")) {
-		warning("Unable to bypass protection: add bank0e file to datadir");
-	} else {
-		Serializer s(&f, Serializer::SM_LOAD, res->_memPtrStart, 2);
-		this->saveOrLoad(s);
-		res->saveOrLoad(s);
-		video->saveOrLoad(s);
-		player->saveOrLoad(s);
-		mixer->saveOrLoad(s);
-	}
-	f.close();
-}
-

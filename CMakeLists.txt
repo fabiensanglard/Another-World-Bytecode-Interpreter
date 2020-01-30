@@ -3,7 +3,8 @@ project(raw)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_definitions(-DAUTO_DETECT_PLATFORM -DBYPASS_PROTECTION)
+add_definitions(-DAUTO_DETECT_PLATFORM)
+add_definitions(-DBYPASS_PROTECTION)
 set(CMAKE_CXX_FLAGS " -Os -g -fno-rtti -fno-exceptions -Wall -Wno-unknown-pragmas -Wshadow -Wundef -Wwrite-strings -Wnon-virtual-dtor -Wno-multichar")
 
 add_executable(raw

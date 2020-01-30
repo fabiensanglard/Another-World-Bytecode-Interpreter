@@ -152,7 +152,6 @@ struct VirtualMachine {
 	void snd_playMusic(uint16_t resNum, uint16_t delay, uint8_t pos);
 	
 	void saveOrLoad(Serializer &ser);
-	void bypassProtection();
 };
 
 #endif
