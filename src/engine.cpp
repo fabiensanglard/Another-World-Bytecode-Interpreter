@@ -184,9 +184,3 @@ void Engine::loadGameState(uint8_t slot) {
 		}
 	}
 }
-
-
-const char* Engine::getDataDir()
-{
-	return this->_dataDir;
-}

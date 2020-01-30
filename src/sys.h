@@ -76,8 +76,6 @@ struct System {
 	virtual void destroyMutex(void *mutex) = 0;
 	virtual void lockMutex(void *mutex) = 0;
 	virtual void unlockMutex(void *mutex) = 0;
-
-	virtual uint8_t* getOffScreenFramebuffer() = 0;
 };
 
 struct MutexStack {

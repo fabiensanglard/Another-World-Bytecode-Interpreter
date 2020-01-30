@@ -2,13 +2,6 @@
 
 
 /*
-#define MEMLIST_PART_PALETTE 0
-#define MEMLIST_PART_CODE    1
-#define MEMLIST_PART_VIDEO1  2
-#define MEMLIST_PART_VIDEO2  3
-*/
-
-/*
 	MEMLIST_PART_VIDEO1 and MEMLIST_PART_VIDEO2 are used to store polygons. 
 
 	It seems that:

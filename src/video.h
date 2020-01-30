@@ -109,19 +109,6 @@ struct Video {
 	void updateDisplay(uint8_t page);
 	
 	void saveOrLoad(Serializer &ser);
-
-	#define TRACE_PALETTE 0
-	#define TRACE_FRAMEBUFFER 0
-	#if TRACE_FRAMEBUFFER
-	    void dumpFrameBuffer(uint8_t *src,uint8_t *dst, int x,int y);
-		void dumpFrameBuffers(char* comment);
-		
-	#endif
-
-	#define TRACE_BG_BUFFER 0
-    #if TRACE_BG_BUFFER
-		void dumpBackGroundBuffer();
-    #endif
 };
 
 #endif

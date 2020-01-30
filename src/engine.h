@@ -53,7 +53,6 @@ struct Engine {
 	void makeGameStateName(uint8_t slot, char *buf);
 	void saveGameState(uint8_t slot, const char *desc);
 	void loadGameState(uint8_t slot);
-	const char* getDataDir();
 };
 
 #endif
