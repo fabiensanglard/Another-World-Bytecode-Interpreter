@@ -40,7 +40,6 @@ struct SDLStub : System {
 
 	uint8_t *_offscreen;
 	SDL_Surface *_screen;
-	SDL_Surface *_sclscreen;
 
 	SDL_Window * _window;
 	SDL_Renderer * _renderer;
@@ -159,13 +158,11 @@ void SDLStub::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, 
 		buf += pitch;
 	}
 
-	SDL_LockSurface(_sclscreen);
-	(this->*_scalers[_scaler].proc)((uint16_t *)_sclscreen->pixels, _sclscreen->pitch, (uint16_t *)_offscreen, SCREEN_W, SCREEN_W, SCREEN_H);
-	SDL_UnlockSurface(_sclscreen);
-	SDL_BlitSurface(_sclscreen, NULL, _screen, NULL);
+	SDL_LockSurface(_screen);
+	(this->*_scalers[_scaler].proc)((uint16_t *)_screen->pixels, _screen->pitch, (uint16_t *)_offscreen, SCREEN_W, SCREEN_W, SCREEN_H);
+	SDL_UnlockSurface(_screen);
 
   SDL_UpdateTexture(_texture, NULL, _screen->pixels, _screen->pitch);
-  SDL_RenderClear(_renderer);
   SDL_RenderCopy(_renderer, _texture, NULL, NULL);
   SDL_RenderPresent(_renderer);
 }
@@ -330,19 +327,9 @@ void SDLStub::prepareGfxMode() {
   _window = SDL_CreateWindow("Another World", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w, h, SDL_WINDOW_SHOWN);
   _renderer = SDL_CreateRenderer(_window, -1, 0);
   _texture = SDL_CreateTexture(_renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, w, h);
-  _screen    = SDL_CreateRGBSurface(0, w, h, 16, 0, 0, 0, 0);
-  _sclscreen = SDL_CreateRGBSurface(0, w, h, 16, 0, 0, 0, 0);
-
+  _screen = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 16, 0, 0, 0, 0);
 	if (!_screen) {
 		error("SDLStub::prepareGfxMode() unable to allocate _screen buffer");
-	}
-	_sclscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 16,
-						_screen->format->Rmask,
-						_screen->format->Gmask,
-						_screen->format->Bmask,
-						_screen->format->Amask);
-	if (!_sclscreen) {
-		error("SDLStub::prepareGfxMode() unable to allocate _sclscreen buffer");
 	}
 }
 
@@ -351,23 +338,19 @@ void SDLStub::cleanupGfxMode() {
 		free(_offscreen);
 		_offscreen = 0;
 	}
-	if (_sclscreen) {
-		SDL_FreeSurface(_sclscreen);
-		_sclscreen = 0;
-	}
 	if (_screen) {
 		SDL_FreeSurface(_screen);
-		_screen = 0;
+    _screen = 0;
 	}
 }
 
 void SDLStub::switchGfxMode(bool fullscreen, uint8_t scaler) {
-	SDL_Surface *prev_sclscreen = _sclscreen;
-	SDL_FreeSurface(_screen); 	
+	SDL_Surface *prev_sclscreen = _screen;
+	SDL_FreeSurface(_screen);
 	_fullscreen = fullscreen;
 	_scaler = scaler;
 	prepareGfxMode();
-	SDL_BlitSurface(prev_sclscreen, NULL, _sclscreen, NULL);
+	SDL_BlitSurface(prev_sclscreen, NULL, _screen, NULL);
 	SDL_FreeSurface(prev_sclscreen);
 }
 
