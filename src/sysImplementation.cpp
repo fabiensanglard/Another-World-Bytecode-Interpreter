@@ -31,13 +31,10 @@ struct SDLStub : System {
 	};
 
 	struct Scaler {
-		const char *name;
 		ScaleProc proc;
 		uint8_t factor;
 	};
 	
-	static const Scaler _scalers[];
-
 	uint8_t *_offscreen;
 	SDL_Surface *_screen;
 
@@ -80,12 +77,12 @@ struct SDLStub : System {
 	
 };
 
-const SDLStub::Scaler SDLStub::_scalers[] = {
-	{ "Point1_tx", &SDLStub::point1_tx, 1 },
-	{ "Point2_tx", &SDLStub::point2_tx, 2 },
-	{ "Scale2x", &SDLStub::scale2x, 2 },
-	{ "Point3_tx", &SDLStub::point3_tx, 3 },
-	{ "Scale3x", &SDLStub::scale3x, 3 }
+const SDLStub::Scaler _scalers[] = {
+	{ &SDLStub::point1_tx, 1 },
+	{ &SDLStub::point2_tx, 2 },
+	{ &SDLStub::scale2x, 2 },
+	{ &SDLStub::point3_tx, 3 },
+	{ &SDLStub::scale3x, 3 }
 };
 
 
@@ -95,10 +92,7 @@ void SDLStub::init(const char *title) {
 //	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 	SDL_ShowCursor(SDL_DISABLE);
 
-	int x, y; 
-
-	SDL_GetMouseState( &x,&y ); 
-	SDL_ShowCursor( SDL_ENABLE ); 
+	SDL_ShowCursor( SDL_ENABLE );
 	SDL_CaptureMouse(SDL_TRUE);
 
 	memset(&input, 0, sizeof(input));
@@ -193,6 +187,8 @@ void SDLStub::processEvents() {
 				input.button = false;
 				break;
 			default:
+			case SDLK_ESCAPE:
+        input.quit = true;
 				break;
 			}
 			break;
