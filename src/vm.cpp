@@ -45,7 +45,6 @@ void VirtualMachine::init() {
    vmVariables[0xDC] = 33;
 #endif
 
-	_fastMode = false;
 	player->_markVar = &vmVariables[VM_VARIABLE_MUS_MARK];
 }
 
@@ -278,25 +277,17 @@ void VirtualMachine::op_blitFramebuffer() {
 	debug(DBG_VM, "VirtualMachine::op_blitFramebuffer(%d)", pageId);
 	inp_handleSpecialKeys();
 
-	if (!_fastMode) {
+  int32_t delay = sys->getTimeStamp() - lastTimeStamp;
+  int32_t timeToSleep = vmVariables[VM_VARIABLE_PAUSE_SLICES] * 20 - delay;
 
-		int32_t delay = sys->getTimeStamp() - lastTimeStamp;
-		int32_t timeToSleep = vmVariables[VM_VARIABLE_PAUSE_SLICES] * 20 - delay;
+  // The bytecode will set vmVariables[VM_VARIABLE_PAUSE_SLICES] from 1 to 5
+  // The virtual machine hence indicate how long the image should be displayed.
 
-		// The bytecode will set vmVariables[VM_VARIABLE_PAUSE_SLICES] from 1 to 5
-		// The virtual machine hence indicate how long the image should be displayed.
+  if (timeToSleep > 0) {
+    sys->sleep(timeToSleep);
+  }
 
-		//printf("vmVariables[VM_VARIABLE_PAUSE_SLICES]=%d\n",vmVariables[VM_VARIABLE_PAUSE_SLICES]);
-
-
-		if (timeToSleep > 0)
-		{
-		//	printf("Sleeping for=%d\n",timeToSleep);
-			sys->sleep(timeToSleep);
-		}
-
-		lastTimeStamp = sys->getTimeStamp();
-	}
+  lastTimeStamp = sys->getTimeStamp();
 
 	//WTF ?
 	vmVariables[0xF7] = 0;

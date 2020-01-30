@@ -399,8 +399,3 @@ void Resource::saveOrLoad(Serializer &ser) {
 		}
 	}	
 }
-
-const char* Resource::getDataDir()
-{
-	return this->_dataDir;
-}

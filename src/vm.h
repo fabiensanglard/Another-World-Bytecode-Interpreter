@@ -19,8 +19,6 @@
 #ifndef __LOGIC_H__
 #define __LOGIC_H__
 
-
-
 #include "intern.h"
 
 #define VM_NUM_THREADS 64
@@ -79,34 +77,19 @@ struct VirtualMachine {
 	Video *video;
 	System *sys;
 
-
-
-
-	
 	int16_t vmVariables[VM_NUM_VARIABLES];
 	uint16_t _scriptStackCalls[VM_NUM_THREADS];
-
-    
 	uint16_t threadsData[NUM_DATA_FIELDS][VM_NUM_THREADS];
+
 	// This array is used: 
 	//     0 to save the channel's instruction pointer 
 	//     when the channel release control (this happens on a break).
-
 	//     1 When a setVec is requested for the next vm frame.
-
-
 	uint8_t vmIsChannelActive[NUM_THREAD_FIELDS][VM_NUM_THREADS];
-
-
-
-
-
-
 
 	Ptr _scriptPtr;
 	uint8_t _stackPtr;
 	bool gotoNextThread;
-	bool _fastMode;
 
 	VirtualMachine(Mixer *mix, Resource *res, SfxPlayer *ply, Video *vid, System *stub);
 	void init();

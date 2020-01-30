@@ -186,7 +186,6 @@ void SDLStub::processEvents() {
 			case SDLK_RETURN:
 				input.button = false;
 				break;
-			default:
 			case SDLK_ESCAPE:
         input.quit = true;
 				break;
@@ -215,8 +214,6 @@ void SDLStub::processEvents() {
 					input.save = true;
 				} else if (ev.key.keysym.sym == SDLK_l) {
 					input.load = true;
-				} else if (ev.key.keysym.sym == SDLK_f) {
-					input.fastMode = true;
 				} else if (ev.key.keysym.sym == SDLK_KP_PLUS) {
 					input.stateSlot = 1;
 				} else if (ev.key.keysym.sym == SDLK_KP_MINUS) {

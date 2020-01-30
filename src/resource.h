@@ -107,8 +107,6 @@ struct Resource {
 	void freeMemBlock();
 	
 	void saveOrLoad(Serializer &ser);
-
-	const char* getDataDir();
 };
 
 #endif

@@ -103,10 +103,6 @@ void Engine::processInput() {
 		saveGameState(_stateSlot, "quicksave");
 		sys->input.save = false;
 	}
-	if (sys->input.fastMode) {
-		vm._fastMode = !vm._fastMode;
-		sys->input.fastMode = false;
-	}
 	if (sys->input.stateSlot != 0) {
 		int8_t slot = _stateSlot + sys->input.stateSlot;
 		if (slot >= 0 && slot < MAX_SAVE_SLOTS) {

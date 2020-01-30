@@ -40,7 +40,6 @@ struct PlayerInput {
 	bool quit;
 	char lastChar;
 	bool save, load;
-	bool fastMode;
 	int8_t stateSlot;
 };
 

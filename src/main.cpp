@@ -159,13 +159,6 @@ int main(int argc, char *argv[]) {
 	   Any read or write to an elements of the sound channels MUST be synchronized with a 
 	   mutex.
 
-   FastMode :
-   ==========
-
-   The game engine features a "fast-mode"...what it to be able to respond to the now defunct
-   TURBO button commonly found on 386/486 era PC ?!
-
-
    Endianess:
    ==========
 

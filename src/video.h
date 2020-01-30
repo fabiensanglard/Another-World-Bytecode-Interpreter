@@ -104,7 +104,6 @@ struct Video {
 	void fillPage(uint8_t page, uint8_t color);
 	void copyPage(uint8_t src, uint8_t dst, int16_t vscroll);
 	void copyPage(const uint8_t *src);
-	uint8_t *allocPage();
 	void changePal(uint8_t pal);
 	void updateDisplay(uint8_t page);
 	
