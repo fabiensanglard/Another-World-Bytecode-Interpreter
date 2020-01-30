@@ -51,7 +51,7 @@ struct SDLStub : System {
 	virtual void init(const char *title);
 	virtual void destroy();
 	virtual void setPalette(uint8_t s, uint8_t n, const uint8_t *buf);
-	virtual void copyRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *buf, uint32_t pitch);
+	virtual void updateDisplay(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *buf, uint32_t pitch);
 	virtual void processEvents();
 	virtual void sleep(uint32_t duration);
 	virtual uint32_t getTimeStamp();
@@ -127,7 +127,7 @@ void SDLStub::setPalette(uint8_t start, uint8_t numEnties, const uint8_t *buf) {
 
 }
 
-void SDLStub::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, const uint8_t *buf, uint32_t pitch) {
+void SDLStub::updateDisplay(uint16_t x, uint16_t y, uint16_t width, uint16_t height, const uint8_t *buf, uint32_t pitch) {
 
 	buf += y * pitch + x;
 	uint16_t *p = (uint16_t *)_offscreen;

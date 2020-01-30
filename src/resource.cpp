@@ -208,7 +208,7 @@ void Resource::loadMarkedAsNeeded() {
 			debug(DBG_BANK, "Resource::load() bufPos=%X size=%X type=%X pos=%X bankId=%X", loadDestination - _memPtrStart, me->packedSize, me->type, me->bankOffset, me->bankId);
 			readBank(me, loadDestination);
 			if(me->type == RT_POLY_ANIM) {
-				video->copyPagePtr(_vidCurPtr);
+        video->copyPage(_vidCurPtr);
 				me->state = MEMENTRY_STATE_NOT_NEEDED;
 			} else {
 				me->bufPtr = loadDestination;

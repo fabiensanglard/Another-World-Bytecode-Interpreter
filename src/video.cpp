@@ -44,20 +44,15 @@ void Video::init() {
 
 	paletteIdRequested = NO_PALETTE_CHANGE_REQUESTED;
 
-	uint8_t* tmp = (uint8_t *)malloc(4*VID_PAGE_SIZE);
-	memset(tmp,0,4*VID_PAGE_SIZE);
+	uint8_t* tmp = (uint8_t *)malloc(4 * VID_PAGE_SIZE);
+	memset(tmp,0,4 * VID_PAGE_SIZE);
 	
-	/*
 	for (int i = 0; i < 4; ++i) {
-		_pagePtrs[i] = allocPage();
-	}
-	*/
-	for (int i = 0; i < 4; ++i) {
-		_pagePtrs[i] = tmp + i * VID_PAGE_SIZE;
+    _pages[i] = tmp + i * VID_PAGE_SIZE;
 	}
 
-	_curPagePtr3 = getPagePtr(1);
-	_curPagePtr2 = getPagePtr(2);
+	_curPagePtr3 = getPage(1);
+	_curPagePtr2 = getPage(2);
 
 
 	changePagePtr1(0xFE);
@@ -334,7 +329,7 @@ void Video::drawPoint(uint8_t color, int16_t x, int16_t y) {
 			cmasko = ~cmaskn;
 			colb = 0x88;		
 		} else if (color == 0x11) {
-			colb = *(_pagePtrs[0] + off);
+			colb = *(_pages[0] + off);
 		}
 		uint8_t b = *(_curPagePtr1 + off);
 		*(_curPagePtr1 + off) = (b & cmasko) | (colb & cmaskn);
@@ -417,7 +412,7 @@ void Video::drawLineP(int16_t x1, int16_t x2, uint8_t color) {
 	int16_t xmin = MIN(x1, x2);
 	uint16_t off = _hliney * 160 + xmin / 2;
 	uint8_t *p = _curPagePtr1 + off;
-	uint8_t *q = _pagePtrs[0] + off;
+	uint8_t *q = _pages[0] + off;
 
 	uint8_t w = xmax / 2 - xmin / 2 + 1;
 	uint8_t cmaske = 0;
@@ -447,10 +442,10 @@ void Video::drawLineP(int16_t x1, int16_t x2, uint8_t color) {
 
 }
 
-uint8_t *Video::getPagePtr(uint8_t page) {
+uint8_t *Video::getPage(uint8_t page) {
 	uint8_t *p;
 	if (page <= 3) {
-		p = _pagePtrs[page];
+		p = _pages[page];
 	} else {
 		switch (page) {
 		case 0xFF:
@@ -460,8 +455,8 @@ uint8_t *Video::getPagePtr(uint8_t page) {
 			p = _curPagePtr2;
 			break;
 		default:
-			p = _pagePtrs[0]; // XXX check
-			warning("Video::getPagePtr() p != [0,1,2,3,0xFF,0xFE] == 0x%X", page);
+			p = _pages[0]; // XXX check
+			warning("Video::getPage() p != [0,1,2,3,0xFF,0xFE] == 0x%X", page);
 			break;
 		}
 	}
@@ -470,16 +465,16 @@ uint8_t *Video::getPagePtr(uint8_t page) {
 
 
 
-void Video::changePagePtr1(uint8_t page) {
-	debug(DBG_VIDEO, "Video::changePagePtr1(%d)", page);
-	_curPagePtr1 = getPagePtr(page);
+void Video::changePagePtr1(uint8_t pageID) {
+	debug(DBG_VIDEO, "Video::changePagePtr1(%d)", pageID);
+	_curPagePtr1 = getPage(pageID);
 }
 
 
 
 void Video::fillPage(uint8_t pageId, uint8_t color) {
 	debug(DBG_VIDEO, "Video::fillPage(%d, %d)", pageId, color);
-	uint8_t *p = getPagePtr(pageId);
+	uint8_t *p = getPage(pageId);
 
 	// Since a palette indice is coded on 4 bits, we need to duplicate the
 	// clearing color to the upper part of the byte.
@@ -501,13 +496,13 @@ void Video::copyPage(uint8_t srcPageId, uint8_t dstPageId, int16_t vscroll) {
 	uint8_t *q;
 
 	if (srcPageId >= 0xFE || !((srcPageId &= 0xBF) & 0x80)) {
-		p = getPagePtr(srcPageId);
-		q = getPagePtr(dstPageId);
+		p = getPage(srcPageId);
+		q = getPage(dstPageId);
 		memcpy(q, p, VID_PAGE_SIZE);
 			
 	} else {
-		p = getPagePtr(srcPageId & 3);
-		q = getPagePtr(dstPageId);
+		p = getPage(srcPageId & 3);
+		q = getPage(dstPageId);
 		if (vscroll >= -199 && vscroll <= 199) {
 			uint16_t h = 200;
 			if (vscroll < 0) {
@@ -525,9 +520,9 @@ void Video::copyPage(uint8_t srcPageId, uint8_t dstPageId, int16_t vscroll) {
 
 
 
-void Video::copyPagePtr(const uint8_t *src) {
-	debug(DBG_VIDEO, "Video::copyPagePtr()");
-	uint8_t *dst = _pagePtrs[0];
+void Video::copyPage(const uint8_t *src) {
+	debug(DBG_VIDEO, "Video::copyPage()");
+	uint8_t *dst = _pages[0];
 	int h = 200;
 	while (h--) {
 		int w = 40;
@@ -553,16 +548,6 @@ void Video::copyPagePtr(const uint8_t *src) {
 
 
 }
-
-/*
-uint8_t *Video::allocPage() {
-	uint8_t *buf = (uint8_t *)malloc(VID_PAGE_SIZE);
-	memset(buf, 0, VID_PAGE_SIZE);
-	return buf;
-}
-*/
-
-
 
 /*
 Note: The palettes set used to be allocated on the stack but I moved it to
@@ -603,7 +588,7 @@ void Video::updateDisplay(uint8_t pageId) {
 		if (pageId == 0xFF) {
 			SWAP(_curPagePtr2, _curPagePtr3);
 		} else {
-			_curPagePtr2 = getPagePtr(pageId);
+			_curPagePtr2 = getPage(pageId);
 		}
 	}
 
@@ -616,18 +601,18 @@ void Video::updateDisplay(uint8_t pageId) {
 	//Q: Why 160 ?
 	//A: Because one byte gives two palette indices so
 	//   we only need to move 320/2 per line.
-	sys->copyRect(0, 0, 320, 200, _curPagePtr2, 160);
+  sys->updateDisplay(0, 0, 320, 200, _curPagePtr2, 160);
 }
 
 void Video::saveOrLoad(Serializer &ser) {
 	uint8_t mask = 0;
 	if (ser._mode == Serializer::SM_SAVE) {
 		for (int i = 0; i < 4; ++i) {
-			if (_pagePtrs[i] == _curPagePtr1)
+			if (_pages[i] == _curPagePtr1)
 				mask |= i << 4;
-			if (_pagePtrs[i] == _curPagePtr2)
+			if (_pages[i] == _curPagePtr2)
 				mask |= i << 2;
-			if (_pagePtrs[i] == _curPagePtr3)
+			if (_pages[i] == _curPagePtr3)
 				mask |= i << 0;
 		}		
 	}
@@ -635,18 +620,18 @@ void Video::saveOrLoad(Serializer &ser) {
 		SE_INT(&currentPaletteId, Serializer::SES_INT8, VER(1)),
 		SE_INT(&paletteIdRequested, Serializer::SES_INT8, VER(1)),
 		SE_INT(&mask, Serializer::SES_INT8, VER(1)),
-		SE_ARRAY(_pagePtrs[0], Video::VID_PAGE_SIZE, Serializer::SES_INT8, VER(1)),
-		SE_ARRAY(_pagePtrs[1], Video::VID_PAGE_SIZE, Serializer::SES_INT8, VER(1)),
-		SE_ARRAY(_pagePtrs[2], Video::VID_PAGE_SIZE, Serializer::SES_INT8, VER(1)),
-		SE_ARRAY(_pagePtrs[3], Video::VID_PAGE_SIZE, Serializer::SES_INT8, VER(1)),
+		SE_ARRAY(_pages[0], Video::VID_PAGE_SIZE, Serializer::SES_INT8, VER(1)),
+		SE_ARRAY(_pages[1], Video::VID_PAGE_SIZE, Serializer::SES_INT8, VER(1)),
+		SE_ARRAY(_pages[2], Video::VID_PAGE_SIZE, Serializer::SES_INT8, VER(1)),
+		SE_ARRAY(_pages[3], Video::VID_PAGE_SIZE, Serializer::SES_INT8, VER(1)),
 		SE_END()
 	};
 	ser.saveOrLoadEntries(entries);
 
 	if (ser._mode == Serializer::SM_LOAD) {
-		_curPagePtr1 = _pagePtrs[(mask >> 4) & 0x3];
-		_curPagePtr2 = _pagePtrs[(mask >> 2) & 0x3];
-		_curPagePtr3 = _pagePtrs[(mask >> 0) & 0x3];
+		_curPagePtr1 = _pages[(mask >> 4) & 0x3];
+		_curPagePtr2 = _pages[(mask >> 2) & 0x3];
+		_curPagePtr3 = _pages[(mask >> 0) & 0x3];
 		changePal(currentPaletteId);
 	}
 }

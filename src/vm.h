@@ -140,7 +140,6 @@ struct VirtualMachine {
 	void op_playMusic();
 
 	void initForPart(uint16_t partId);
-	void setupPart(uint16_t partId);
 	void checkThreadRequests();
 	void hostFrame();
 	void executeThread();
