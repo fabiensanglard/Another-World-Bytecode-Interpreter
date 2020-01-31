@@ -576,7 +576,7 @@ void Video::changePal(uint8_t palNum) {
 		pal[i * 3 + 2] = ((c2 & 0x0F) >> 2) | ((c2 & 0x0F) << 2); // b
 	}
 
-	sys->setPalette(0, NUM_COLORS, pal);
+	sys->setPalette(pal);
 	currentPaletteId = palNum;
 }
 

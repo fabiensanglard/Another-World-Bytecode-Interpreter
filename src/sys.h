@@ -57,7 +57,7 @@ struct System {
 	virtual void init(const char *title) = 0;
 	virtual void destroy() = 0;
 
-	virtual void setPalette(uint8_t s, uint8_t n, const uint8_t *buf) = 0;
+	virtual void setPalette(const uint8_t *buf) = 0;
 	virtual void updateDisplay(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *buf, uint32_t pitch) = 0;
 
 	virtual void processEvents() = 0;

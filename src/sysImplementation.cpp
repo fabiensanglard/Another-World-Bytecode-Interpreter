@@ -50,7 +50,7 @@ struct SDLStub : System {
 	virtual ~SDLStub() {}
 	virtual void init(const char *title);
 	virtual void destroy();
-	virtual void setPalette(uint8_t s, uint8_t n, const uint8_t *buf);
+	virtual void setPalette(const uint8_t *buf);
 	virtual void updateDisplay(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *buf, uint32_t pitch);
 	virtual void processEvents();
 	virtual void sleep(uint32_t duration);
@@ -110,18 +110,14 @@ void SDLStub::destroy() {
 	SDL_Quit();
 }
 
-void SDLStub::setPalette(uint8_t start, uint8_t numEnties, const uint8_t *buf) {
+void SDLStub::setPalette(const uint8_t *buf) {
 
-	assert(start + numEnties <= 16);
-
-	for (int i = start; i < start + numEnties; ++i) {
-
+	for (int i = 0; i < NUM_COLORS; i++) {
 		uint8_t c[3];
 		for (int j = 0; j < 3; j++) {
-			uint8_t col = buf[i * 3 + j];
-			c[j] =  (col << 2) | (col & 3);
+			uint8_t color = buf[i * 3 + j];
+			c[j] = (color << 2) | (color & 3);
 		}
-
 		palette[i] = SDL_MapRGB(_screen->format, c[0], c[1], c[2]);
 	}
 
