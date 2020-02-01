@@ -554,29 +554,13 @@ Note: The palettes set used to be allocated on the stack but I moved it to
       the heap so I could dump the four framebuffer and follow how
 	  frames are generated.
 */
-uint8_t pal[NUM_COLORS * 3]; //3 = BYTES_PER_PIXEL
 void Video::changePal(uint8_t palNum) {
 
 	if (palNum >= 32)
 		return;
 	
 	uint8_t *p = res->segPalettes + palNum * 32; //colors are coded on 2bytes (565) for 16 colors = 32
-
-	// Moved to the heap, legacy code used to allocate the palette
-	// on the stack.
-	//uint8_t pal[NUM_COLORS * 3]; //3 = BYTES_PER_PIXEL
-
-	for (int i = 0; i < NUM_COLORS; ++i) 
-	{
-		uint8_t c1 = *(p + 0);
-		uint8_t c2 = *(p + 1);
-		p += 2;
-		pal[i * 3 + 0] = ((c1 & 0x0F) << 2) | ((c1 & 0x0F) >> 2); // r
-		pal[i * 3 + 1] = ((c2 & 0xF0) >> 2) | ((c2 & 0xF0) >> 6); // g
-		pal[i * 3 + 2] = ((c2 & 0x0F) >> 2) | ((c2 & 0x0F) << 2); // b
-	}
-
-	sys->setPalette(pal);
+	sys->setPalette(p);
 	currentPaletteId = palNum;
 }
 
@@ -601,7 +585,7 @@ void Video::updateDisplay(uint8_t pageId) {
 	//Q: Why 160 ?
 	//A: Because one byte gives two palette indices so
 	//   we only need to move 320/2 per line.
-  sys->updateDisplay(0, 0, 320, 200, _curPagePtr2, 160);
+  sys->updateDisplay(_curPagePtr2);
 }
 
 void Video::saveOrLoad(Serializer &ser) {

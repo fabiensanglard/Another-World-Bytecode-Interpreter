@@ -35,31 +35,24 @@ struct SDLStub : System {
 		uint8_t factor;
 	};
 	
-	uint8_t *_offscreen;
-	SDL_Surface *_screen;
-
-	SDL_Window * _window;
-	SDL_Renderer * _renderer;
-	SDL_Texture * _texture;
-
-	bool _fullscreen;
+	SDL_Surface *_screen = nullptr;
+	SDL_Window * _window = nullptr;
+	SDL_Renderer * _renderer = nullptr;
 	uint8_t _scaler;
-
-	uint16_t palette[NUM_COLORS];
 
 	virtual ~SDLStub() {}
 	virtual void init(const char *title);
 	virtual void destroy();
 	virtual void setPalette(const uint8_t *buf);
-	virtual void updateDisplay(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *buf, uint32_t pitch);
+	virtual void updateDisplay(const uint8_t *src);
 	virtual void processEvents();
 	virtual void sleep(uint32_t duration);
 	virtual uint32_t getTimeStamp();
 	virtual void startAudio(AudioCallback callback, void *param);
 	virtual void stopAudio();
 	virtual uint32_t getOutputSampleRate();
-	virtual void *addTimer(uint32_t delay, TimerCallback callback, void *param);
-	virtual void removeTimer(void *timerId);
+	virtual int addTimer(uint32_t delay, TimerCallback callback, void *param);
+	virtual void removeTimer(int timerId);
 	virtual void *createMutex();
 	virtual void destroyMutex(void *mutex);
 	virtual void lockMutex(void *mutex);
@@ -67,25 +60,8 @@ struct SDLStub : System {
 
 	void prepareGfxMode();
 	void cleanupGfxMode();
-	void switchGfxMode(bool fullscreen, uint8_t scaler);
-
-	void point1_tx(uint16_t *dst, uint16_t dstPitch, const uint16_t *src, uint16_t srcPitch, uint16_t w, uint16_t h);
-	void point2_tx(uint16_t *dst, uint16_t dstPitch, const uint16_t *src, uint16_t srcPitch, uint16_t w, uint16_t h);
-	void point3_tx(uint16_t *dst, uint16_t dstPitch, const uint16_t *src, uint16_t srcPitch, uint16_t w, uint16_t h);
-	void scale2x(uint16_t *dst, uint16_t dstPitch, const uint16_t *src, uint16_t srcPitch, uint16_t w, uint16_t h);
-	void scale3x(uint16_t *dst, uint16_t dstPitch, const uint16_t *src, uint16_t srcPitch, uint16_t w, uint16_t h);
-	
+	void switchGfxMode();
 };
-
-const SDLStub::Scaler _scalers[] = {
-	{ &SDLStub::point1_tx, 1 },
-	{ &SDLStub::point2_tx, 2 },
-	{ &SDLStub::scale2x, 2 },
-	{ &SDLStub::point3_tx, 3 },
-	{ &SDLStub::scale3x, 3 }
-};
-
-
 
 void SDLStub::init(const char *title) {
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER);
@@ -96,12 +72,7 @@ void SDLStub::init(const char *title) {
 	SDL_CaptureMouse(SDL_TRUE);
 
 	memset(&input, 0, sizeof(input));
-	_offscreen = (uint8_t *)malloc(SCREEN_W * SCREEN_H * 2);
-	if (!_offscreen) {
-		error("Unable to allocate offscreen buffer");
-	}
-	_fullscreen = false;
-	_scaler = 1;
+	_scaler = 3;
 	prepareGfxMode();
 }
 
@@ -110,51 +81,56 @@ void SDLStub::destroy() {
 	SDL_Quit();
 }
 
-void SDLStub::setPalette(const uint8_t *buf) {
+void SDLStub::setPalette(const uint8_t *p) {
+  SDL_Color colors[NUM_COLORS];
 
-	for (int i = 0; i < NUM_COLORS; i++) {
-		uint8_t c[3];
-		for (int j = 0; j < 3; j++) {
-			uint8_t color = buf[i * 3 + j];
-			c[j] = (color << 2) | (color & 3);
-		}
-		palette[i] = SDL_MapRGB(_screen->format, c[0], c[1], c[2]);
-	}
-
+  // The incoming palette is in 565 format.
+  for (int i = 0; i < NUM_COLORS; ++i)
+  {
+    uint8_t c1 = *(p + 0);
+    uint8_t c2 = *(p + 1);
+    colors[i].r = (((c1 & 0x0F) << 2) | ((c1 & 0x0F) >> 2)) << 2; // r
+    colors[i].g = (((c2 & 0xF0) >> 2) | ((c2 & 0xF0) >> 6)) << 2; // g
+    colors[i].b = (((c2 & 0x0F) >> 2) | ((c2 & 0x0F) << 2)) << 2; // b
+    colors[i].a = 0xFF;
+    p += 2;
+  }
+  SDL_SetPaletteColors(_screen->format->palette, colors, 0, NUM_COLORS);
 }
 
-void SDLStub::updateDisplay(uint16_t x, uint16_t y, uint16_t width, uint16_t height, const uint8_t *buf, uint32_t pitch) {
+void SDLStub::prepareGfxMode() {
+  int w = SCREEN_W;
+  int h = SCREEN_H;
 
-	buf += y * pitch + x;
-	uint16_t *p = (uint16_t *)_offscreen;
+  _window = SDL_CreateWindow("Another World", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w * _scaler, h * _scaler, SDL_WINDOW_SHOWN);
+  _renderer = SDL_CreateRenderer(_window, -1, 0);
+  _screen = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 8, 0, 0, 0, 0);
+  if (!_screen) {
+    error("SDLStub::prepareGfxMode() unable to allocate _screen buffer");
+  }
+}
+
+void SDLStub::updateDisplay(const uint8_t *src) {
+  uint16_t height = SCREEN_H;
+	uint8_t* p = (uint8_t*)_screen->pixels;
 
 	//For each line
 	while (height--) {
-
 		//One byte gives us two pixels, we only need to iterate w/2 times.
-		for (int i = 0; i < width / 2; ++i) {
-
+		for (int i = 0; i < SCREEN_W / 2; ++i) {
 			//Extract two palette indices from upper byte and lower byte.
-			uint8_t p1 = *(buf + i) >> 4;
-			uint8_t p2 = *(buf + i) & 0xF;
-
-			//Get the pixel value from the palette and write in in offScreen.
-			*(p + i * 2 + 0) = palette[p1];
-			*(p + i * 2 + 1) = palette[p2];
-
+			p[i * 2 + 0] = *(src + i) >> 4;
+			p[i * 2 + 1] = *(src + i) & 0xF;
 		}
-
-		p += SCREEN_W;
-		buf += pitch;
+		p += _screen->pitch;
+    src += SCREEN_W/2;
 	}
 
-	SDL_LockSurface(_screen);
-	(this->*_scalers[_scaler].proc)((uint16_t *)_screen->pixels, _screen->pitch, (uint16_t *)_offscreen, SCREEN_W, SCREEN_W, SCREEN_H);
-	SDL_UnlockSurface(_screen);
-
-  SDL_UpdateTexture(_texture, NULL, _screen->pixels, _screen->pitch);
-  SDL_RenderCopy(_renderer, _texture, NULL, NULL);
+  SDL_Texture* texture = SDL_CreateTextureFromSurface(_renderer, _screen);
+  SDL_RenderCopy(_renderer, texture, nullptr, nullptr);
   SDL_RenderPresent(_renderer);
+  SDL_DestroyTexture(texture);
+
 }
 
 void SDLStub::processEvents() {
@@ -188,19 +164,21 @@ void SDLStub::processEvents() {
 			}
 			break;
 		case SDL_KEYDOWN:
-			if (ev.key.keysym.mod & KMOD_ALT) {
+			if (ev.key.keysym.mod & KMOD_CTRL) {
 				if (ev.key.keysym.sym == SDLK_RETURN) {
-					switchGfxMode(!_fullscreen, _scaler);
-				} else if (ev.key.keysym.sym == SDLK_KP_PLUS) {
-					uint8_t s = _scaler + 1;
-					if (s < ARRAYSIZE(_scalers)) {
-						switchGfxMode(_fullscreen, s);
-					}
-				} else if (ev.key.keysym.sym == SDLK_KP_MINUS) {
-					int8_t s = _scaler - 1;
-					if (_scaler > 0) {
-						switchGfxMode(_fullscreen, s);
-					}
+					switchGfxMode();
+				} else if (ev.key.keysym.sym == SDLK_PLUS) {
+          _scaler = _scaler + 1;
+          if (_scaler > 4) {
+            _scaler = 4;
+          }
+          switchGfxMode();
+				} else if (ev.key.keysym.sym == SDLK_MINUS) {
+          _scaler = _scaler - 1;
+          if (_scaler < 1) {
+            _scaler = 1;
+          }
+          switchGfxMode();
 				} else if (ev.key.keysym.sym == SDLK_x) {
 					input.quit = true;
 				}
@@ -284,13 +262,12 @@ uint32_t SDLStub::getOutputSampleRate() {
 	return SOUND_SAMPLE_RATE;
 }
 
-void *SDLStub::addTimer(uint32_t delay, TimerCallback callback, void *param) {
-//	return SDL_AddTimer(delay, (SDL_NewTimerCallback)callback, param);
-return nullptr;
+int SDLStub::addTimer(uint32_t delay, TimerCallback callback, void *param) {
+	return SDL_AddTimer(delay, (SDL_TimerCallback)callback, param);
 }
 
-void SDLStub::removeTimer(void *timerId) {
-//	SDL_RemoveTimer((SDL_TimerID)timerId);
+void SDLStub::removeTimer(int timerId) {
+	SDL_RemoveTimer(timerId);
 }
 
 void *SDLStub::createMutex() {
@@ -309,152 +286,28 @@ void SDLStub::unlockMutex(void *mutex) {
 	SDL_mutexV((SDL_mutex *)mutex);
 }
 
-void SDLStub::prepareGfxMode() {
-	int w = SCREEN_W * _scalers[_scaler].factor;
-	int h = SCREEN_H * _scalers[_scaler].factor;
 
-  _window = SDL_CreateWindow("Another World", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w, h, SDL_WINDOW_SHOWN);
-  _renderer = SDL_CreateRenderer(_window, -1, 0);
-  _texture = SDL_CreateTexture(_renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, w, h);
-  _screen = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 16, 0, 0, 0, 0);
-	if (!_screen) {
-		error("SDLStub::prepareGfxMode() unable to allocate _screen buffer");
-	}
-}
 
 void SDLStub::cleanupGfxMode() {
-	if (_offscreen) {
-		free(_offscreen);
-		_offscreen = 0;
-	}
 	if (_screen) {
 		SDL_FreeSurface(_screen);
     _screen = 0;
 	}
+
+	if (_window) {
+	  SDL_DestroyWindow(_window);
+	  _window = nullptr;
+	}
+
+	if (_screen) {
+	  SDL_FreeSurface(_screen);
+	  _screen = nullptr;
+	}
 }
 
-void SDLStub::switchGfxMode(bool fullscreen, uint8_t scaler) {
-	SDL_Surface *prev_sclscreen = _screen;
-	SDL_FreeSurface(_screen);
-	_fullscreen = fullscreen;
-	_scaler = scaler;
+void SDLStub::switchGfxMode() {
+  cleanupGfxMode();
 	prepareGfxMode();
-	SDL_BlitSurface(prev_sclscreen, NULL, _screen, NULL);
-	SDL_FreeSurface(prev_sclscreen);
-}
-
-void SDLStub::point1_tx(uint16_t *dst, uint16_t dstPitch, const uint16_t *src, uint16_t srcPitch, uint16_t w, uint16_t h) {
-	dstPitch >>= 1;
-	while (h--) {
-		memcpy(dst, src, w * 2);
-		dst += dstPitch;
-		src += dstPitch;
-	}
-}
-
-void SDLStub::point2_tx(uint16_t *dst, uint16_t dstPitch, const uint16_t *src, uint16_t srcPitch, uint16_t w, uint16_t h) {
-	dstPitch >>= 1;
-	while (h--) {
-		uint16_t *p = dst;
-		for (int i = 0; i < w; ++i, p += 2) {
-			uint16_t c = *(src + i);
-			*(p + 0) = c;
-			*(p + 1) = c;
-			*(p + 0 + dstPitch) = c;
-			*(p + 1 + dstPitch) = c;
-		}
-		dst += dstPitch * 2;
-		src += srcPitch;
-	}
-}
-
-void SDLStub::point3_tx(uint16_t *dst, uint16_t dstPitch, const uint16_t *src, uint16_t srcPitch, uint16_t w, uint16_t h) {
-	dstPitch >>= 1;
-	while (h--) {
-		uint16_t *p = dst;
-		for (int i = 0; i < w; ++i, p += 3) {
-			uint16_t c = *(src + i);
-			*(p + 0) = c;
-			*(p + 1) = c;
-			*(p + 2) = c;
-			*(p + 0 + dstPitch) = c;
-			*(p + 1 + dstPitch) = c;
-			*(p + 2 + dstPitch) = c;
-			*(p + 0 + dstPitch * 2) = c;
-			*(p + 1 + dstPitch * 2) = c;
-			*(p + 2 + dstPitch * 2) = c;
-		}
-		dst += dstPitch * 3;
-		src += srcPitch;
-	}
-}
-
-void SDLStub::scale2x(uint16_t *dst, uint16_t dstPitch, const uint16_t *src, uint16_t srcPitch, uint16_t w, uint16_t h) {
-	dstPitch >>= 1;
-	while (h--) {
-		uint16_t *p = dst;
-		for (int i = 0; i < w; ++i, p += 2) {
-			uint16_t B = *(src + i - srcPitch);
-			uint16_t D = *(src + i - 1);
-			uint16_t E = *(src + i);
-			uint16_t F = *(src + i + 1);
-			uint16_t H = *(src + i + srcPitch);
-			if (B != H && D != F) {
-				*(p) = D == B ? D : E;
-				*(p + 1) = B == F ? F : E;
-				*(p + dstPitch) = D == H ? D : E;
-				*(p + dstPitch + 1) = H == F ? F : E;
-			} else {
-				*(p) = E;
-				*(p + 1) = E;
-				*(p + dstPitch) = E;
-				*(p + dstPitch + 1) = E;
-			}
-		}
-		dst += dstPitch * 2;
-		src += srcPitch;
-	}
-}
-
-void SDLStub::scale3x(uint16_t *dst, uint16_t dstPitch, const uint16_t *src, uint16_t srcPitch, uint16_t w, uint16_t h) {
-	dstPitch >>= 1;
-	while (h--) {
-		uint16_t *p = dst;
-		for (int i = 0; i < w; ++i, p += 3) {
-			uint16_t A = *(src + i - srcPitch - 1);
-			uint16_t B = *(src + i - srcPitch);
-			uint16_t C = *(src + i - srcPitch + 1);
-			uint16_t D = *(src + i - 1);
-			uint16_t E = *(src + i);
-			uint16_t F = *(src + i + 1);
-			uint16_t G = *(src + i + srcPitch - 1);
-			uint16_t H = *(src + i + srcPitch);
-			uint16_t I = *(src + i + srcPitch + 1);
-			if (B != H && D != F) {
-				*(p) = D == B ? D : E;
-				*(p + 1) = (D == B && E != C) || (B == F && E != A) ? B : E;
-				*(p + 2) = B == F ? F : E;
-				*(p + dstPitch) = (D == B && E != G) || (D == B && E != A) ? D : E;
-				*(p + dstPitch + 1) = E;
-				*(p + dstPitch + 2) = (B == F && E != I) || (H == F && E != C) ? F : E;
-				*(p + 2 * dstPitch) = D == H ? D : E;
-				*(p + 2 * dstPitch + 1) = (D == H && E != I) || (H == F && E != G) ? H : E;
-				*(p + 2 * dstPitch + 2) = H == F ? F : E;
-			} else {
-				*(p) = E;
-				*(p + 1) = E;
-				*(p + 2) = E;
-				*(p + dstPitch) = E;
-				*(p + dstPitch + 1) = E;
-				*(p + dstPitch + 2) = E;
-				*(p + 2 * dstPitch) = E;
-				*(p + 2 * dstPitch + 1) = E;
-				*(p + 2 * dstPitch + 2) = E;
-			}
-		}
-		dst += dstPitch * 3;
-		src += srcPitch;
-	}
 }
 
 SDLStub sysImplementation;
