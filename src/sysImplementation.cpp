@@ -30,15 +30,12 @@ struct SDLStub : System {
 		SOUND_SAMPLE_RATE = 22050
 	};
 
-	struct Scaler {
-		ScaleProc proc;
-		uint8_t factor;
-	};
-	
+	int DEFAULT_SCALE = 3;
+
 	SDL_Surface *_screen = nullptr;
 	SDL_Window * _window = nullptr;
 	SDL_Renderer * _renderer = nullptr;
-	uint8_t _scaler;
+	uint8_t _scale = DEFAULT_SCALE;
 
 	virtual ~SDLStub() {}
 	virtual void init(const char *title);
@@ -72,7 +69,7 @@ void SDLStub::init(const char *title) {
 	SDL_CaptureMouse(SDL_TRUE);
 
 	memset(&input, 0, sizeof(input));
-	_scaler = 3;
+  _scale = DEFAULT_SCALE;
 	prepareGfxMode();
 }
 
@@ -81,33 +78,38 @@ void SDLStub::destroy() {
 	SDL_Quit();
 }
 
+static SDL_Color palette[NUM_COLORS];
 void SDLStub::setPalette(const uint8_t *p) {
-  SDL_Color colors[NUM_COLORS];
-
   // The incoming palette is in 565 format.
   for (int i = 0; i < NUM_COLORS; ++i)
   {
     uint8_t c1 = *(p + 0);
     uint8_t c2 = *(p + 1);
-    colors[i].r = (((c1 & 0x0F) << 2) | ((c1 & 0x0F) >> 2)) << 2; // r
-    colors[i].g = (((c2 & 0xF0) >> 2) | ((c2 & 0xF0) >> 6)) << 2; // g
-    colors[i].b = (((c2 & 0x0F) >> 2) | ((c2 & 0x0F) << 2)) << 2; // b
-    colors[i].a = 0xFF;
+    palette[i].r = (((c1 & 0x0F) << 2) | ((c1 & 0x0F) >> 2)) << 2; // r
+    palette[i].g = (((c2 & 0xF0) >> 2) | ((c2 & 0xF0) >> 6)) << 2; // g
+    palette[i].b = (((c2 & 0x0F) >> 2) | ((c2 & 0x0F) << 2)) << 2; // b
+    palette[i].a = 0xFF;
     p += 2;
   }
-  SDL_SetPaletteColors(_screen->format->palette, colors, 0, NUM_COLORS);
+  SDL_SetPaletteColors(_screen->format->palette, palette, 0, NUM_COLORS);
 }
 
 void SDLStub::prepareGfxMode() {
   int w = SCREEN_W;
   int h = SCREEN_H;
 
-  _window = SDL_CreateWindow("Another World", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w * _scaler, h * _scaler, SDL_WINDOW_SHOWN);
+  _window = SDL_CreateWindow("Another World", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w * _scale, h * _scale, SDL_WINDOW_SHOWN);
   _renderer = SDL_CreateRenderer(_window, -1, 0);
   _screen = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 8, 0, 0, 0, 0);
   if (!_screen) {
     error("SDLStub::prepareGfxMode() unable to allocate _screen buffer");
   }
+  // Upon resize during gameplay, the screen surface is re-created and a new palette is allocated.
+  // This will result in an all-white surface palette displaying a window full of white until a
+  // a palette is set by the VM.
+  // To avoid this issue, we save the last palette locally and re-upload it each time. On game start-up this
+  // is not requested.
+  SDL_SetPaletteColors(_screen->format->palette, palette, 0, NUM_COLORS);
 }
 
 void SDLStub::updateDisplay(const uint8_t *src) {
@@ -165,26 +167,9 @@ void SDLStub::processEvents() {
 			break;
 		case SDL_KEYDOWN:
 			if (ev.key.keysym.mod & KMOD_CTRL) {
-				if (ev.key.keysym.sym == SDLK_RETURN) {
-					switchGfxMode();
-				} else if (ev.key.keysym.sym == SDLK_PLUS) {
-          _scaler = _scaler + 1;
-          if (_scaler > 4) {
-            _scaler = 4;
-          }
-          switchGfxMode();
-				} else if (ev.key.keysym.sym == SDLK_MINUS) {
-          _scaler = _scaler - 1;
-          if (_scaler < 1) {
-            _scaler = 1;
-          }
-          switchGfxMode();
-				} else if (ev.key.keysym.sym == SDLK_x) {
-					input.quit = true;
-				}
-				break;
-			} else if (ev.key.keysym.mod & KMOD_CTRL) {
-				if (ev.key.keysym.sym == SDLK_s) {
+        if (ev.key.keysym.sym == SDLK_x) {
+          input.quit = true;
+        } else if (ev.key.keysym.sym == SDLK_s) {
 					input.save = true;
 				} else if (ev.key.keysym.sym == SDLK_l) {
 					input.load = true;
@@ -193,7 +178,7 @@ void SDLStub::processEvents() {
 				} else if (ev.key.keysym.sym == SDLK_KP_MINUS) {
 					input.stateSlot = -1;
 				}
-				break;
+        break;
 			}
 			input.lastChar = ev.key.keysym.sym;
 			switch(ev.key.keysym.sym) {
@@ -219,6 +204,11 @@ void SDLStub::processEvents() {
 			case SDLK_p:
 				input.pause = true;
 				break;
+			  case SDLK_TAB :
+          _scale = _scale + 1;
+        if (_scale > 4) { _scale = 1; }
+        switchGfxMode();
+        break;
 			default:
 				break;
 			}

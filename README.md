@@ -53,8 +53,7 @@ Here are the various in game hotkeys :
 -   Ctrl L          load game state
 -   Ctrl + and -    change game state slot
 -   Ctrl F          toggle fast mode
--   Alt Enter       toggle windowed/fullscreen mode
--   Alt + and -     change scaler factor
+-   TAB             change window scale factor
 
 Credits:
 --------
