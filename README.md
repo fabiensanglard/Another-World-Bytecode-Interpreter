@@ -19,7 +19,7 @@ About:
 raw is a re-implementation of the engine used in the game Another World. This 
 game, released under the name Out Of This World in non-European countries, was 
 written by Eric Chahi at the beginning of the '90s. More information can be 
-found here : http://www.mobygames.com/game/sheet/p,2/gameId,564/.
+found on [MobyGames](https://www.mobygames.com/game/564/out-of-this-world/).
 
 Supported Versions:
 -------------------
